@@ -1,17 +1,25 @@
-import type { DiffReviewComment, DiffReviewFile, ReviewSubmitPayload } from "./types.js";
+import type { DiffReviewComment, ReviewFile, ReviewSubmitPayload } from "./types.js";
 
-function formatLocation(comment: DiffReviewComment, filePath: string): string {
+function formatLocation(comment: DiffReviewComment, file: ReviewFile | undefined): string {
+  const filePath = file?.displayPath ?? comment.fileId;
   if (comment.side === "file" || comment.startLine == null) {
     return filePath;
   }
-  const suffix = comment.side === "original" ? " (old)" : " (new)";
-  if (comment.endLine != null && comment.endLine !== comment.startLine) {
-    return `${filePath}:${comment.startLine}-${comment.endLine}${suffix}`;
+
+  const needsDiffSuffix = file?.status != null;
+  const range = comment.endLine != null && comment.endLine !== comment.startLine
+    ? `${comment.startLine}-${comment.endLine}`
+    : `${comment.startLine}`;
+
+  if (!needsDiffSuffix) {
+    return `${filePath}:${range}`;
   }
-  return `${filePath}:${comment.startLine}${suffix}`;
+
+  const suffix = comment.side === "original" ? " (old)" : " (new)";
+  return `${filePath}:${range}${suffix}`;
 }
 
-export function composeReviewPrompt(files: DiffReviewFile[], payload: ReviewSubmitPayload): string {
+export function composeReviewPrompt(files: ReviewFile[], payload: ReviewSubmitPayload): string {
   const fileMap = new Map(files.map((file) => [file.id, file]));
   const lines: string[] = [];
 
@@ -26,8 +34,7 @@ export function composeReviewPrompt(files: DiffReviewFile[], payload: ReviewSubm
 
   payload.comments.forEach((comment, index) => {
     const file = fileMap.get(comment.fileId);
-    const filePath = file?.displayPath ?? comment.fileId;
-    lines.push(`${index + 1}. ${formatLocation(comment, filePath)}`);
+    lines.push(`${index + 1}. ${formatLocation(comment, file)}`);
     lines.push(`   ${comment.body.trim()}`);
     lines.push("");
   });

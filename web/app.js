@@ -1,7 +1,8 @@
 const reviewData = JSON.parse(document.getElementById("diff-review-data").textContent || "{}");
 
 const state = {
-  activeFileId: reviewData.files[0]?.id ?? null,
+  activeFileId: null,
+  currentScope: reviewData.files.some((file) => file.inDiff) ? "diff" : "all",
   comments: [],
   overallComment: "",
   hideUnchanged: false,
@@ -9,13 +10,25 @@ const state = {
   collapsedDirs: {},
   reviewedFiles: {},
   scrollPositions: {},
+  sidebarCollapsed: false,
+  fileFilter: "",
+  fileContents: {},
+  fileErrors: {},
+  pendingRequestIds: {},
 };
 
+const sidebarEl = document.getElementById("sidebar");
+const sidebarTitleEl = document.getElementById("sidebar-title");
+const sidebarSearchInputEl = document.getElementById("sidebar-search-input");
+const toggleSidebarButton = document.getElementById("toggle-sidebar-button");
+const scopeDiffButton = document.getElementById("scope-diff-button");
+const scopeAllButton = document.getElementById("scope-all-button");
+const windowTitleEl = document.getElementById("window-title");
 const repoRootEl = document.getElementById("repo-root");
 const fileTreeEl = document.getElementById("file-tree");
 const summaryEl = document.getElementById("summary");
 const currentFileLabelEl = document.getElementById("current-file-label");
-const mainPaneEl = document.getElementById("main-pane");
+const modeHintEl = document.getElementById("mode-hint");
 const fileCommentsContainer = document.getElementById("file-comments-container");
 const editorContainerEl = document.getElementById("editor-container");
 const submitButton = document.getElementById("submit-button");
@@ -27,6 +40,8 @@ const toggleUnchangedButton = document.getElementById("toggle-unchanged-button")
 const toggleWrapButton = document.getElementById("toggle-wrap-button");
 
 repoRootEl.textContent = reviewData.repoRoot || "";
+windowTitleEl.textContent = "Review";
+modeHintEl.textContent = "Switch between git diff and all files in the sidebar. Hover or click line numbers in the gutter to add an inline comment.";
 
 let monacoApi = null;
 let diffEditor = null;
@@ -36,6 +51,7 @@ let originalDecorations = [];
 let modifiedDecorations = [];
 let activeViewZones = [];
 let editorResizeObserver = null;
+let requestSequence = 0;
 
 function saveCurrentScrollPosition() {
   if (!diffEditor || !state.activeFileId) return;
@@ -111,6 +127,7 @@ function escapeHtml(value) {
 }
 
 function statusLabel(status) {
+  if (!status) return "";
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
@@ -127,18 +144,114 @@ function isFileReviewed(fileId) {
   return state.reviewedFiles[fileId] === true;
 }
 
+function getScopedFiles() {
+  if (state.currentScope === "diff") {
+    return reviewData.files.filter((file) => file.inDiff);
+  }
+  return reviewData.files.filter((file) => file.hasModified);
+}
+
+function ensureActiveFileForScope() {
+  const scopedFiles = getScopedFiles();
+  if (scopedFiles.length === 0) {
+    state.activeFileId = null;
+    return;
+  }
+  if (scopedFiles.some((file) => file.id === state.activeFileId)) {
+    return;
+  }
+  state.activeFileId = scopedFiles[0].id;
+}
+
 function activeFile() {
   return reviewData.files.find((file) => file.id === state.activeFileId) ?? null;
+}
+
+function getFilePath(file) {
+  return file?.newPath || file?.oldPath || file?.displayPath || "";
+}
+
+function getBaseName(path) {
+  const parts = path.split("/");
+  return parts[parts.length - 1] || path;
+}
+
+function normalizeQuery(query) {
+  return String(query || "").trim().toLowerCase().replace(/\s+/g, "");
+}
+
+function scoreSubsequence(query, candidate) {
+  if (!query) return 0;
+  let queryIndex = 0;
+  let score = 0;
+  let firstMatchIndex = -1;
+  let previousMatchIndex = -2;
+
+  for (let i = 0; i < candidate.length && queryIndex < query.length; i += 1) {
+    if (candidate[i] !== query[queryIndex]) continue;
+
+    if (firstMatchIndex === -1) firstMatchIndex = i;
+    score += 10;
+
+    if (i === previousMatchIndex + 1) {
+      score += 8;
+    }
+
+    const previousChar = i > 0 ? candidate[i - 1] : "";
+    if (i === 0 || previousChar === "/" || previousChar === "_" || previousChar === "-" || previousChar === ".") {
+      score += 12;
+    }
+
+    previousMatchIndex = i;
+    queryIndex += 1;
+  }
+
+  if (queryIndex !== query.length) return -1;
+  if (firstMatchIndex >= 0) score += Math.max(0, 20 - firstMatchIndex);
+  return score;
+}
+
+function getFileSearchScore(query, file) {
+  const normalizedQuery = normalizeQuery(query);
+  if (!normalizedQuery) return 0;
+
+  const path = getFilePath(file).toLowerCase();
+  const baseName = getBaseName(path);
+  const pathScore = scoreSubsequence(normalizedQuery, path);
+  const baseScore = scoreSubsequence(normalizedQuery, baseName);
+  let score = Math.max(pathScore, baseScore >= 0 ? baseScore + 40 : -1);
+
+  if (score < 0) return -1;
+  if (baseName === normalizedQuery) score += 200;
+  else if (baseName.startsWith(normalizedQuery)) score += 120;
+  else if (path.includes(normalizedQuery)) score += 35;
+
+  return score;
+}
+
+function getFilteredFiles() {
+  const scopedFiles = getScopedFiles();
+  const query = state.fileFilter.trim();
+  if (!query) return [...scopedFiles];
+
+  return scopedFiles
+    .map((file) => ({ file, score: getFileSearchScore(query, file) }))
+    .filter((entry) => entry.score >= 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return getFilePath(a.file).localeCompare(getFilePath(b.file));
+    })
+    .map((entry) => entry.file);
 }
 
 function buildTree(files) {
   const root = { name: "", path: "", kind: "dir", children: new Map(), file: null };
   for (const file of files) {
-    const path = file.newPath || file.oldPath || file.displayPath;
+    const path = getFilePath(file);
     const parts = path.split("/");
     let node = root;
     let currentPath = "";
-    for (let i = 0; i < parts.length; i++) {
+    for (let i = 0; i < parts.length; i += 1) {
       const part = parts[i];
       const isLeaf = i === parts.length - 1;
       currentPath = currentPath ? `${currentPath}/${part}` : part;
@@ -156,6 +269,17 @@ function buildTree(files) {
     }
   }
   return root;
+}
+
+function openFile(fileId) {
+  if (state.activeFileId === fileId) {
+    ensureFileLoaded(fileId);
+    return;
+  }
+  saveCurrentScrollPosition();
+  state.activeFileId = fileId;
+  renderAll({ restoreFileScroll: true });
+  ensureFileLoaded(fileId);
 }
 
 function renderTreeNode(node, depth) {
@@ -193,6 +317,8 @@ function renderTreeNode(node, depth) {
     const file = child.file;
     const count = state.comments.filter((comment) => comment.fileId === file.id).length;
     const reviewed = isFileReviewed(file.id);
+    const loading = state.pendingRequestIds[file.id] != null && state.fileContents[file.id] == null;
+    const errored = state.fileErrors[file.id] != null;
     const button = document.createElement("button");
     button.type = "button";
     button.className = [
@@ -202,21 +328,84 @@ function renderTreeNode(node, depth) {
     button.style.paddingLeft = `${(depth * indentPx) + 26}px`;
     button.innerHTML = `
       <span class="flex min-w-0 items-center gap-1.5 truncate ${file.id === state.activeFileId ? "font-medium" : ""}">
-        <span class="shrink-0 text-[10px] ${reviewed ? "text-[#3fb950]" : "text-transparent"}">●</span>
+        <span class="shrink-0 text-[10px] ${reviewed ? "text-[#3fb950]" : errored ? "text-red-400" : loading ? "text-[#58a6ff]" : "text-transparent"}">${reviewed ? "●" : errored ? "!" : loading ? "…" : "●"}</span>
         <span class="truncate">${escapeHtml(child.name)}</span>
       </span>
       <span class="flex shrink-0 items-center gap-1.5">
         ${count > 0 ? `<span class="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#1f2937] px-1 text-[10px] font-medium text-[#c9d1d9]">${count}</span>` : ""}
-        <span class="font-medium ${statusBadgeClass(file.status)}">${escapeHtml(statusLabel(file.status).charAt(0))}</span>
+        ${file.status ? `<span class="font-medium ${statusBadgeClass(file.status)}">${escapeHtml(statusLabel(file.status).charAt(0))}</span>` : ""}
       </span>
     `;
     button.addEventListener("click", () => {
-      saveCurrentScrollPosition();
-      state.activeFileId = file.id;
-      renderAll({ restoreFileScroll: true });
+      openFile(file.id);
     });
     fileTreeEl.appendChild(button);
   }
+}
+
+function renderSearchResults(files) {
+  files.forEach((file) => {
+    const path = getFilePath(file);
+    const baseName = getBaseName(path);
+    const parentPath = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+    const count = state.comments.filter((comment) => comment.fileId === file.id).length;
+    const reviewed = isFileReviewed(file.id);
+    const loading = state.pendingRequestIds[file.id] != null && state.fileContents[file.id] == null;
+    const errored = state.fileErrors[file.id] != null;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = [
+      "group flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left",
+      file.id === state.activeFileId ? "bg-[#373e47] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]",
+    ].join(" ");
+    button.innerHTML = `
+      <span class="min-w-0 flex-1">
+        <span class="flex items-center gap-1.5">
+          <span class="shrink-0 text-[10px] ${reviewed ? "text-[#3fb950]" : errored ? "text-red-400" : loading ? "text-[#58a6ff]" : "text-transparent"}">${reviewed ? "●" : errored ? "!" : loading ? "…" : "●"}</span>
+          <span class="truncate text-[13px] ${file.id === state.activeFileId ? "font-medium" : ""}">${escapeHtml(baseName)}</span>
+        </span>
+        <span class="mt-0.5 block truncate pl-[14px] text-[11px] ${file.id === state.activeFileId ? "text-[#c9d1d9]" : "text-review-muted"}">${escapeHtml(parentPath || path)}</span>
+      </span>
+      <span class="flex shrink-0 items-center gap-1.5">
+        ${count > 0 ? `<span class="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[#1f2937] px-1 text-[10px] font-medium text-[#c9d1d9]">${count}</span>` : ""}
+        ${file.status ? `<span class="font-medium ${statusBadgeClass(file.status)}">${escapeHtml(statusLabel(file.status).charAt(0))}</span>` : ""}
+      </span>
+    `;
+    button.addEventListener("click", () => {
+      openFile(file.id);
+    });
+    fileTreeEl.appendChild(button);
+  });
+}
+
+function updateSidebarLayout() {
+  const collapsed = state.sidebarCollapsed;
+  sidebarEl.style.width = collapsed ? "0px" : "280px";
+  sidebarEl.style.minWidth = collapsed ? "0px" : "280px";
+  sidebarEl.style.flexBasis = collapsed ? "0px" : "280px";
+  sidebarEl.style.borderRightWidth = collapsed ? "0px" : "1px";
+  sidebarEl.style.pointerEvents = collapsed ? "none" : "auto";
+  toggleSidebarButton.textContent = collapsed ? "Show sidebar" : "Hide sidebar";
+}
+
+function activeFileShowsDiff() {
+  const file = activeFile();
+  return file != null && file.status != null;
+}
+
+function updateScopeButtons() {
+  const hasDiffFiles = reviewData.files.some((file) => file.inDiff);
+  const applyButtonClasses = (button, active, disabled) => {
+    button.disabled = disabled;
+    button.className = disabled
+      ? "cursor-default rounded-md border border-review-border bg-[#11161d] px-2.5 py-1 text-[11px] font-medium text-review-muted opacity-60"
+      : active
+        ? "cursor-pointer rounded-md border border-[#2ea043]/40 bg-[#238636]/15 px-2.5 py-1 text-[11px] font-medium text-[#3fb950] hover:bg-[#238636]/25"
+        : "cursor-pointer rounded-md border border-review-border bg-review-panel px-2.5 py-1 text-[11px] font-medium text-review-text hover:bg-[#21262d]";
+  };
+
+  applyButtonClasses(scopeDiffButton, state.currentScope === "diff", !hasDiffFiles);
+  applyButtonClasses(scopeAllButton, state.currentScope === "all", false);
 }
 
 function updateToggleButtons() {
@@ -226,17 +415,20 @@ function updateToggleButtons() {
   toggleReviewedButton.className = reviewed
     ? "cursor-pointer rounded-md border border-[#2ea043]/40 bg-[#238636]/15 px-3 py-1 text-xs font-medium text-[#3fb950] hover:bg-[#238636]/25"
     : "cursor-pointer rounded-md border border-review-border bg-review-panel px-3 py-1 text-xs font-medium text-review-text hover:bg-[#21262d]";
-  toggleUnchangedButton.textContent = state.hideUnchanged ? "Show full file" : "Show changed areas only";
   toggleWrapButton.textContent = `Wrap lines: ${state.wrapLines ? "on" : "off"}`;
+  toggleUnchangedButton.textContent = state.hideUnchanged ? "Show full file" : "Show changed areas only";
+  toggleUnchangedButton.style.display = activeFileShowsDiff() ? "inline-flex" : "none";
+  updateScopeButtons();
   submitButton.disabled = false;
 }
 
 function applyEditorOptions() {
   if (!diffEditor) return;
   diffEditor.updateOptions({
+    renderSideBySide: activeFileShowsDiff(),
     diffWordWrap: state.wrapLines ? "on" : "off",
     hideUnchangedRegions: {
-      enabled: state.hideUnchanged,
+      enabled: activeFileShowsDiff() && state.hideUnchanged,
       contextLineCount: 4,
       minimumLineCount: 2,
       revealLineCount: 12,
@@ -247,11 +439,34 @@ function applyEditorOptions() {
 }
 
 function renderTree() {
+  ensureActiveFileForScope();
   fileTreeEl.innerHTML = "";
-  renderTreeNode(buildTree(reviewData.files), 0);
+  const scopedFiles = getScopedFiles();
+  const visibleFiles = getFilteredFiles();
+
+  if (visibleFiles.length === 0) {
+    const message = state.fileFilter.trim()
+      ? `No files match <span class="text-review-text">${escapeHtml(state.fileFilter.trim())}</span>.`
+      : state.currentScope === "diff"
+        ? "No files in the git diff."
+        : "No reviewable files found.";
+    fileTreeEl.innerHTML = `
+      <div class="px-3 py-4 text-sm text-review-muted">
+        ${message}
+      </div>
+    `;
+  } else if (state.fileFilter.trim()) {
+    renderSearchResults(visibleFiles);
+  } else {
+    renderTreeNode(buildTree(visibleFiles), 0);
+  }
+
+  sidebarTitleEl.textContent = state.currentScope === "diff" ? "Git diff" : "All files";
   const comments = state.comments.length;
-  summaryEl.textContent = `${reviewData.files.length} file(s) • ${comments} comment(s)${state.overallComment ? " • overall note" : ""}`;
+  const filteredSuffix = state.fileFilter.trim() ? ` • ${visibleFiles.length} shown` : "";
+  summaryEl.textContent = `${scopedFiles.length} file(s) • ${comments} comment(s)${state.overallComment ? " • overall note" : ""}${filteredSuffix}`;
   updateToggleButtons();
+  updateSidebarLayout();
 }
 
 function showTextModal(options) {
@@ -300,7 +515,7 @@ function showFileCommentModal() {
   if (!file) return;
   showTextModal({
     title: `File comment for ${file.displayPath}`,
-    description: "This comment applies to the whole file and appears above the diff.",
+    description: "This comment applies to the whole file and appears above the editor.",
     initialValue: "",
     saveLabel: "Add comment",
     onSave: (value) => {
@@ -366,15 +581,29 @@ function renderCommentDOM(comment, onDelete) {
   return container;
 }
 
+function canCommentOnSide(file, side) {
+  if (!file) return false;
+  if (side === "original") {
+    return file.status != null && file.hasOriginal;
+  }
+  return file.hasModified;
+}
+
+function isActiveFileReady() {
+  const file = activeFile();
+  if (!file) return false;
+  return state.fileContents[file.id] != null && state.fileErrors[file.id] == null;
+}
+
 function syncViewZones() {
   clearViewZones();
-  if (!diffEditor) return;
+  if (!diffEditor || !isActiveFileReady()) return;
   const file = activeFile();
   if (!file) return;
 
   const originalEditor = diffEditor.getOriginalEditor();
   const modifiedEditor = diffEditor.getModifiedEditor();
-  const inlineComments = state.comments.filter((c) => c.fileId === file.id && c.side !== "file");
+  const inlineComments = state.comments.filter((comment) => comment.fileId === file.id && comment.side !== "file");
 
   inlineComments.forEach((item) => {
     const editor = item.side === "original" ? originalEditor : modifiedEditor;
@@ -422,7 +651,10 @@ function updateDecorations() {
 function renderFileComments() {
   fileCommentsContainer.innerHTML = "";
   const file = activeFile();
-  if (!file) return;
+  if (!file) {
+    fileCommentsContainer.className = "hidden overflow-hidden px-0 py-0";
+    return;
+  }
 
   const fileComments = state.comments.filter((c) => c.fileId === file.id && c.side === "file");
 
@@ -443,23 +675,54 @@ function renderFileComments() {
   });
 }
 
+function getPlaceholderContents(file) {
+  const path = getFilePath(file);
+  const error = state.fileErrors[file.id];
+  if (error) {
+    const body = `Failed to load ${path}\n\n${error}`;
+    return { originalContent: body, modifiedContent: body };
+  }
+  const body = `Loading ${path}...`;
+  return { originalContent: body, modifiedContent: body };
+}
+
+function getMountedContents(file) {
+  return state.fileContents[file.id] || getPlaceholderContents(file);
+}
+
 function mountFile(options = {}) {
   if (!diffEditor || !monacoApi) return;
   const file = activeFile();
-  if (!file) return;
+  if (!file) {
+    currentFileLabelEl.textContent = "No file selected";
+    clearViewZones();
+    if (originalModel) originalModel.dispose();
+    if (modifiedModel) modifiedModel.dispose();
+    originalModel = monacoApi.editor.createModel("", "plaintext");
+    modifiedModel = monacoApi.editor.createModel("", "plaintext");
+    diffEditor.setModel({ original: originalModel, modified: modifiedModel });
+    applyEditorOptions();
+    updateDecorations();
+    renderFileComments();
+    requestAnimationFrame(layoutEditor);
+    return;
+  }
+
+  ensureFileLoaded(file.id);
 
   const preserveScroll = options.preserveScroll === true;
   const scrollState = preserveScroll ? captureScrollState() : null;
 
   clearViewZones();
   currentFileLabelEl.textContent = file.displayPath;
-  const language = inferLanguage(file.newPath || file.oldPath || file.displayPath);
+  const language = inferLanguage(getFilePath(file));
+  const contents = getMountedContents(file);
 
   if (originalModel) originalModel.dispose();
   if (modifiedModel) modifiedModel.dispose();
 
-  originalModel = monacoApi.editor.createModel(file.oldContent, language);
-  modifiedModel = monacoApi.editor.createModel(file.newContent, language);
+  originalModel = monacoApi.editor.createModel(contents.originalContent, language);
+  modifiedModel = monacoApi.editor.createModel(contents.modifiedContent, language);
 
   diffEditor.setModel({ original: originalModel, modified: modifiedModel });
   applyEditorOptions();
@@ -516,7 +779,7 @@ function createGlyphHoverActions(editor, side) {
 
   function openDraftAtLine(line) {
     const file = activeFile();
-    if (!file) return;
+    if (!file || !canCommentOnSide(file, side) || !isActiveFileReady()) return;
     state.comments.push({
       id: `${Date.now()}:${Math.random().toString(16).slice(2)}`,
       fileId: file.id,
@@ -530,13 +793,19 @@ function createGlyphHoverActions(editor, side) {
   }
 
   editor.onMouseMove((event) => {
+    const file = activeFile();
+    if (!file || !canCommentOnSide(file, side) || !isActiveFileReady()) {
+      hoverDecoration = editor.deltaDecorations(hoverDecoration, []);
+      return;
+    }
+
     const target = event.target;
     if (target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN || target.type === monacoApi.editor.MouseTargetType.GUTTER_LINE_NUMBERS) {
       const line = target.position?.lineNumber;
       if (!line) return;
       hoverDecoration = editor.deltaDecorations(hoverDecoration, [{
         range: new monacoApi.Range(line, 1, line, 1),
-        options: { glyphMarginClassName: "review-glyph-plus" }
+        options: { glyphMarginClassName: "review-glyph-plus" },
       }]);
     } else {
       hoverDecoration = editor.deltaDecorations(hoverDecoration, []);
@@ -548,6 +817,9 @@ function createGlyphHoverActions(editor, side) {
   });
 
   editor.onMouseDown((event) => {
+    const file = activeFile();
+    if (!file || !canCommentOnSide(file, side) || !isActiveFileReady()) return;
+
     const target = event.target;
     if (target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN || target.type === monacoApi.editor.MouseTargetType.GUTTER_LINE_NUMBERS) {
       const line = target.position?.lineNumber;
@@ -556,6 +828,52 @@ function createGlyphHoverActions(editor, side) {
     }
   });
 }
+
+function nextRequestId() {
+  requestSequence += 1;
+  return `request:${Date.now()}:${requestSequence}`;
+}
+
+function ensureFileLoaded(fileId) {
+  if (!fileId) return;
+  if (state.fileContents[fileId] != null) return;
+  if (state.fileErrors[fileId] != null) return;
+  if (state.pendingRequestIds[fileId] != null) return;
+
+  const requestId = nextRequestId();
+  state.pendingRequestIds[fileId] = requestId;
+  renderTree();
+  if (window.glimpse?.send) {
+    window.glimpse.send({ type: "request-file", requestId, fileId });
+  }
+}
+
+window.__reviewReceive = function (message) {
+  if (!message || typeof message !== "object") return;
+
+  if (message.type === "file-data") {
+    state.fileContents[message.fileId] = {
+      originalContent: message.originalContent,
+      modifiedContent: message.modifiedContent,
+    };
+    delete state.fileErrors[message.fileId];
+    delete state.pendingRequestIds[message.fileId];
+    renderTree();
+    if (state.activeFileId === message.fileId) {
+      mountFile({ restoreFileScroll: true });
+    }
+    return;
+  }
+
+  if (message.type === "file-error") {
+    state.fileErrors[message.fileId] = message.message || "Unknown error";
+    delete state.pendingRequestIds[message.fileId];
+    renderTree();
+    if (state.activeFileId === message.fileId) {
+      mountFile({ preserveScroll: false });
+    }
+  }
+};
 
 function setupMonaco() {
   window.require.config({
@@ -575,13 +893,13 @@ function setupMonaco() {
         "editor.background": "#0d1117",
         "diffEditor.insertedTextBackground": "#2ea04326",
         "diffEditor.removedTextBackground": "#f8514926",
-      }
+      },
     });
     monacoApi.editor.setTheme("review-dark");
 
     diffEditor = monacoApi.editor.createDiffEditor(editorContainerEl, {
       automaticLayout: true,
-      renderSideBySide: true,
+      renderSideBySide: activeFileShowsDiff(),
       readOnly: true,
       originalEditable: false,
       minimap: { enabled: true, renderCharacters: false, showSlider: "always", size: "proportional" },
@@ -664,6 +982,49 @@ toggleReviewedButton.addEventListener("click", () => {
   renderTree();
 });
 
+scopeDiffButton.addEventListener("click", () => {
+  if (!reviewData.files.some((file) => file.inDiff)) return;
+  if (state.currentScope === "diff") return;
+  saveCurrentScrollPosition();
+  state.currentScope = "diff";
+  renderAll({ restoreFileScroll: true });
+  const file = activeFile();
+  if (file) ensureFileLoaded(file.id);
+});
+
+scopeAllButton.addEventListener("click", () => {
+  if (state.currentScope === "all") return;
+  saveCurrentScrollPosition();
+  state.currentScope = "all";
+  renderAll({ restoreFileScroll: true });
+  const file = activeFile();
+  if (file) ensureFileLoaded(file.id);
+});
+
+toggleSidebarButton.addEventListener("click", () => {
+  state.sidebarCollapsed = !state.sidebarCollapsed;
+  updateSidebarLayout();
+  requestAnimationFrame(() => {
+    layoutEditor();
+    setTimeout(layoutEditor, 50);
+  });
+});
+
+sidebarSearchInputEl.addEventListener("input", () => {
+  state.fileFilter = sidebarSearchInputEl.value;
+  renderTree();
+});
+
+sidebarSearchInputEl.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    sidebarSearchInputEl.value = "";
+    state.fileFilter = "";
+    renderTree();
+  }
+});
+
+ensureActiveFileForScope();
 renderTree();
 renderFileComments();
+updateSidebarLayout();
 setupMonaco();
