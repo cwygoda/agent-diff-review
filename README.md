@@ -1,18 +1,18 @@
-# pi-diff-review
+# Agent Diff Review
 
-This is pure slop, see: https://pi.dev/session/#d4ce533cedbd60040f2622dc3db950e2
+Based on the slop which is [pi-diff-review](https://github.com/badlogic/pi-diff-review), we added
+more slop so you can review your slop!
 
-It is my hope, that someone takes this idea and makes it gud.
+Native diff review window for agents, powered by [Glimpse](https://github.com/hazat/glimpse) and
+Monaco.
 
-Native diff review window for pi, powered by [Glimpse](https://github.com/hazat/glimpse) and Monaco.
+## Installation
 
-```
-pi install git:https://github.com/badlogic/pi-diff-review
-```
+Come back later.
 
 ## What it does
 
-Adds a `/diff-review` command to pi.
+Adds a `/diff-review` command to your agent.
 
 The command:
 
@@ -28,7 +28,6 @@ The command:
 
 - macOS, Linux, or Windows
 - Node.js 20+
-- `pi` installed
 - internet access for the Tailwind and Monaco CDNs used by the review window
 
 ### Windows notes

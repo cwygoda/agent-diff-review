@@ -127,7 +127,7 @@ export default function (pi: ExtensionAPI) {
     const window = open(html, {
       width: 1680,
       height: 1020,
-      title: "pi review",
+      title: "diff review",
     });
     activeWindow = window;
 
