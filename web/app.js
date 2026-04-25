@@ -62,14 +62,20 @@ function escapeHtml(value) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;");
+    .replace(/"/g, "&quot;");
 }
 
 function inferLanguage(path) {
   if (!path) return "plaintext";
   const lower = path.toLowerCase();
   if (lower.endsWith(".ts") || lower.endsWith(".tsx")) return "typescript";
-  if (lower.endsWith(".js") || lower.endsWith(".jsx") || lower.endsWith(".mjs") || lower.endsWith(".cjs")) return "javascript";
+  if (
+    lower.endsWith(".js") ||
+    lower.endsWith(".jsx") ||
+    lower.endsWith(".mjs") ||
+    lower.endsWith(".cjs")
+  )
+    return "javascript";
   if (lower.endsWith(".json")) return "json";
   if (lower.endsWith(".md")) return "markdown";
   if (lower.endsWith(".css")) return "css";
@@ -86,9 +92,12 @@ function inferLanguage(path) {
 
 function scopeLabel(scope) {
   switch (scope) {
-    case "git-diff": return "Git diff";
-    case "last-commit": return "Last commit";
-    default: return "All files";
+    case "git-diff":
+      return "Git diff";
+    case "last-commit":
+      return "Last commit";
+    default:
+      return "All files";
   }
 }
 
@@ -110,10 +119,14 @@ function statusLabel(status) {
 
 function statusBadgeClass(status) {
   switch (status) {
-    case "added": return "text-[#3fb950]";
-    case "deleted": return "text-[#f85149]";
-    case "renamed": return "text-[#d29922]";
-    default: return "text-[#58a6ff]";
+    case "added":
+      return "text-[#3fb950]";
+    case "deleted":
+      return "text-[#f85149]";
+    case "renamed":
+      return "text-[#d29922]";
+    default:
+      return "text-[#58a6ff]";
   }
 }
 
@@ -188,7 +201,10 @@ function getActiveStatus(file) {
 }
 
 function normalizeQuery(query) {
-  return String(query || "").trim().toLowerCase().replace(/\s+/g, "");
+  return String(query || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
 }
 
 function scoreSubsequence(query, candidate) {
@@ -209,7 +225,13 @@ function scoreSubsequence(query, candidate) {
     }
 
     const previousChar = i > 0 ? candidate[i - 1] : "";
-    if (i === 0 || previousChar === "/" || previousChar === "_" || previousChar === "-" || previousChar === ".") {
+    if (
+      i === 0 ||
+      previousChar === "/" ||
+      previousChar === "_" ||
+      previousChar === "-" ||
+      previousChar === "."
+    ) {
       score += 12;
     }
 
@@ -384,7 +406,8 @@ function renderTreeNode(node, depth) {
       const collapsed = state.collapsedDirs[child.path] === true;
       const row = document.createElement("button");
       row.type = "button";
-      row.className = "group flex w-full items-center gap-1.5 px-2 py-1 text-left text-[13px] text-[#c9d1d9] hover:bg-[#21262d]";
+      row.className =
+        "group flex w-full items-center gap-1.5 px-2 py-1 text-left text-[13px] text-[#c9d1d9] hover:bg-[#21262d]";
       row.style.paddingLeft = `${depth * indentPx + 8}px`;
       row.innerHTML = `
         <svg class="h-4 w-4 shrink-0 text-[#8b949e] transition-transform ${collapsed ? "-rotate-90" : ""}" viewBox="0 0 16 16" fill="currentColor">
@@ -402,7 +425,9 @@ function renderTreeNode(node, depth) {
     }
 
     const file = child.file;
-    const count = state.comments.filter((comment) => comment.fileId === file.id && comment.scope === state.currentScope).length;
+    const count = state.comments.filter(
+      (comment) => comment.fileId === file.id && comment.scope === state.currentScope,
+    ).length;
     const reviewed = isFileReviewed(file.id);
     const requestState = getRequestState(file.id, state.currentScope);
     const loading = requestState.requestId != null && requestState.contents == null;
@@ -412,9 +437,13 @@ function renderTreeNode(node, depth) {
     button.type = "button";
     button.className = [
       "group flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-[13px]",
-      file.id === state.activeFileId ? "bg-[#373e47] text-white" : reviewed ? "text-[#c9d1d9] hover:bg-[#21262d]" : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9]",
+      file.id === state.activeFileId
+        ? "bg-[#373e47] text-white"
+        : reviewed
+          ? "text-[#c9d1d9] hover:bg-[#21262d]"
+          : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#c9d1d9]",
     ].join(" ");
-    button.style.paddingLeft = `${(depth * indentPx) + 26}px`;
+    button.style.paddingLeft = `${depth * indentPx + 26}px`;
     button.innerHTML = `
       <span class="flex min-w-0 items-center gap-1.5 truncate ${file.id === state.activeFileId ? "font-medium" : ""}">
         <span class="shrink-0 text-[10px] ${reviewed ? "text-[#3fb950]" : errored ? "text-red-400" : loading ? "text-[#58a6ff]" : "text-transparent"}">${reviewed ? "●" : errored ? "!" : loading ? "…" : "●"}</span>
@@ -435,7 +464,9 @@ function renderSearchResults(files) {
     const path = getFileSearchPath(file);
     const baseName = getBaseName(path);
     const parentPath = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
-    const count = state.comments.filter((comment) => comment.fileId === file.id && comment.scope === state.currentScope).length;
+    const count = state.comments.filter(
+      (comment) => comment.fileId === file.id && comment.scope === state.currentScope,
+    ).length;
     const reviewed = isFileReviewed(file.id);
     const requestState = getRequestState(file.id, state.currentScope);
     const loading = requestState.requestId != null && requestState.contents == null;
@@ -445,7 +476,9 @@ function renderSearchResults(files) {
     button.type = "button";
     button.className = [
       "group flex w-full items-center justify-between gap-3 rounded-md px-2 py-2 text-left",
-      file.id === state.activeFileId ? "bg-[#373e47] text-white" : "text-[#c9d1d9] hover:bg-[#21262d]",
+      file.id === state.activeFileId
+        ? "bg-[#373e47] text-white"
+        : "text-[#c9d1d9] hover:bg-[#21262d]",
     ].join(" ");
     button.innerHTML = `
       <span class="min-w-0 flex-1">
@@ -496,7 +529,11 @@ function updateScopeButtons() {
   scopeAllButton.textContent = `All files${counts.all > 0 ? ` (${counts.all})` : ""}`;
 
   applyButtonClasses(scopeDiffButton, state.currentScope === "git-diff", counts.diff === 0);
-  applyButtonClasses(scopeLastCommitButton, state.currentScope === "last-commit", counts.lastCommit === 0);
+  applyButtonClasses(
+    scopeLastCommitButton,
+    state.currentScope === "last-commit",
+    counts.lastCommit === 0,
+  );
   applyButtonClasses(scopeAllButton, state.currentScope === "all-files", counts.all === 0);
 }
 
@@ -508,7 +545,9 @@ function updateToggleButtons() {
     ? "cursor-pointer rounded-md border border-[#2ea043]/40 bg-[#238636]/15 px-3 py-1 text-xs font-medium text-[#3fb950] hover:bg-[#238636]/25"
     : "cursor-pointer rounded-md border border-review-border bg-review-panel px-3 py-1 text-xs font-medium text-review-text hover:bg-[#21262d]";
   toggleWrapButton.textContent = `Wrap lines: ${state.wrapLines ? "on" : "off"}`;
-  toggleUnchangedButton.textContent = state.hideUnchanged ? "Show full file" : "Show changed areas only";
+  toggleUnchangedButton.textContent = state.hideUnchanged
+    ? "Show full file"
+    : "Show changed areas only";
   toggleUnchangedButton.style.display = activeFileShowsDiff() ? "inline-flex" : "none";
   updateScopeButtons();
   modeHintEl.textContent = scopeHint(state.currentScope);
@@ -650,9 +689,10 @@ function clearViewZones() {
 function renderCommentDOM(comment, onDelete) {
   const container = document.createElement("div");
   container.className = "view-zone-container";
-  const title = comment.side === "file"
-    ? `File comment • ${scopeLabel(comment.scope)}`
-    : `${comment.side === "original" ? "Original" : "Modified"} line ${comment.startLine} • ${scopeLabel(comment.scope)}`;
+  const title =
+    comment.side === "file"
+      ? `File comment • ${scopeLabel(comment.scope)}`
+      : `${comment.side === "original" ? "Original" : "Modified"} line ${comment.startLine} • ${scopeLabel(comment.scope)}`;
 
   container.innerHTML = `
     <div class="mb-2 flex items-center justify-between gap-3">
@@ -695,7 +735,10 @@ function syncViewZones() {
 
   const originalEditor = diffEditor.getOriginalEditor();
   const modifiedEditor = diffEditor.getModifiedEditor();
-  const inlineComments = state.comments.filter((comment) => comment.fileId === file.id && comment.scope === state.currentScope && comment.side !== "file");
+  const inlineComments = state.comments.filter(
+    (comment) =>
+      comment.fileId === file.id && comment.scope === state.currentScope && comment.side !== "file",
+  );
 
   inlineComments.forEach((item) => {
     const editor = item.side === "original" ? originalEditor : modifiedEditor;
@@ -705,7 +748,8 @@ function syncViewZones() {
     });
 
     editor.changeViewZones((accessor) => {
-      const lineCount = typeof item.body === "string" && item.body.length > 0 ? item.body.split("\n").length : 1;
+      const lineCount =
+        typeof item.body === "string" && item.body.length > 0 ? item.body.split("\n").length : 1;
       const id = accessor.addZone({
         afterLineNumber: item.startLine,
         heightInPx: Math.max(150, lineCount * 22 + 86),
@@ -719,7 +763,14 @@ function syncViewZones() {
 function updateDecorations() {
   if (!diffEditor || !monacoApi) return;
   const file = activeFile();
-  const comments = file ? state.comments.filter((comment) => comment.fileId === file.id && comment.scope === state.currentScope && comment.side !== "file") : [];
+  const comments = file
+    ? state.comments.filter(
+        (comment) =>
+          comment.fileId === file.id &&
+          comment.scope === state.currentScope &&
+          comment.side !== "file",
+      )
+    : [];
   const originalRanges = [];
   const modifiedRanges = [];
 
@@ -728,16 +779,26 @@ function updateDecorations() {
       range: new monacoApi.Range(comment.startLine, 1, comment.startLine, 1),
       options: {
         isWholeLine: true,
-        className: comment.side === "original" ? "review-comment-line-original" : "review-comment-line-modified",
-        glyphMarginClassName: comment.side === "original" ? "review-comment-glyph-original" : "review-comment-glyph-modified",
+        className:
+          comment.side === "original"
+            ? "review-comment-line-original"
+            : "review-comment-line-modified",
+        glyphMarginClassName:
+          comment.side === "original"
+            ? "review-comment-glyph-original"
+            : "review-comment-glyph-modified",
       },
     };
     if (comment.side === "original") originalRanges.push(range);
     else modifiedRanges.push(range);
   }
 
-  originalDecorations = diffEditor.getOriginalEditor().deltaDecorations(originalDecorations, originalRanges);
-  modifiedDecorations = diffEditor.getModifiedEditor().deltaDecorations(modifiedDecorations, modifiedRanges);
+  originalDecorations = diffEditor
+    .getOriginalEditor()
+    .deltaDecorations(originalDecorations, originalRanges);
+  modifiedDecorations = diffEditor
+    .getModifiedEditor()
+    .deltaDecorations(modifiedDecorations, modifiedRanges);
 }
 
 function renderFileComments() {
@@ -748,14 +809,18 @@ function renderFileComments() {
     return;
   }
 
-  const fileComments = state.comments.filter((comment) => comment.fileId === file.id && comment.scope === state.currentScope && comment.side === "file");
+  const fileComments = state.comments.filter(
+    (comment) =>
+      comment.fileId === file.id && comment.scope === state.currentScope && comment.side === "file",
+  );
 
   if (fileComments.length === 0) {
     fileCommentsContainer.className = "hidden overflow-hidden px-0 py-0";
     return;
   }
 
-  fileCommentsContainer.className = "border-b border-review-border bg-[#0d1117] px-4 py-4 space-y-4";
+  fileCommentsContainer.className =
+    "border-b border-review-border bg-[#0d1117] px-4 py-4 space-y-4";
   fileComments.forEach((comment) => {
     const dom = renderCommentDOM(comment, () => {
       state.comments = state.comments.filter((item) => item.id !== comment.id);
@@ -889,13 +954,18 @@ function createGlyphHoverActions(editor, side) {
     }
 
     const target = event.target;
-    if (target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN || target.type === monacoApi.editor.MouseTargetType.GUTTER_LINE_NUMBERS) {
+    if (
+      target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
+      target.type === monacoApi.editor.MouseTargetType.GUTTER_LINE_NUMBERS
+    ) {
       const line = target.position?.lineNumber;
       if (!line) return;
-      hoverDecoration = editor.deltaDecorations(hoverDecoration, [{
-        range: new monacoApi.Range(line, 1, line, 1),
-        options: { glyphMarginClassName: "review-glyph-plus" },
-      }]);
+      hoverDecoration = editor.deltaDecorations(hoverDecoration, [
+        {
+          range: new monacoApi.Range(line, 1, line, 1),
+          options: { glyphMarginClassName: "review-glyph-plus" },
+        },
+      ]);
     } else {
       hoverDecoration = editor.deltaDecorations(hoverDecoration, []);
     }
@@ -910,7 +980,10 @@ function createGlyphHoverActions(editor, side) {
     if (!file || !canCommentOnSide(file, side) || !isActiveFileReady()) return;
 
     const target = event.target;
-    if (target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN || target.type === monacoApi.editor.MouseTargetType.GUTTER_LINE_NUMBERS) {
+    if (
+      target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
+      target.type === monacoApi.editor.MouseTargetType.GUTTER_LINE_NUMBERS
+    ) {
       const line = target.position?.lineNumber;
       if (!line) return;
       openDraftAtLine(line);
@@ -973,7 +1046,12 @@ function setupMonaco() {
       renderSideBySide: activeFileShowsDiff(),
       readOnly: true,
       originalEditable: false,
-      minimap: { enabled: true, renderCharacters: false, showSlider: "always", size: "proportional" },
+      minimap: {
+        enabled: true,
+        renderCharacters: false,
+        showSlider: "always",
+        size: "proportional",
+      },
       renderOverviewRuler: true,
       diffWordWrap: "on",
       scrollBeyondLastLine: false,

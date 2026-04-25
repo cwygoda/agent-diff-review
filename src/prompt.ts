@@ -2,15 +2,19 @@ import type { DiffReviewComment, ReviewFile, ReviewScope, ReviewSubmitPayload } 
 
 function formatScopeLabel(scope: ReviewScope): string {
   switch (scope) {
-    case "git-diff": return "git diff";
-    case "last-commit": return "last commit";
-    default: return "all files";
+    case "git-diff":
+      return "git diff";
+    case "last-commit":
+      return "last commit";
+    default:
+      return "all files";
   }
 }
 
 function getCommentFilePath(file: ReviewFile | undefined, scope: ReviewScope): string {
   if (file == null) return "(unknown file)";
-  const comparison = scope === "git-diff" ? file.gitDiff : scope === "last-commit" ? file.lastCommit : null;
+  const comparison =
+    scope === "git-diff" ? file.gitDiff : scope === "last-commit" ? file.lastCommit : null;
   return comparison?.displayPath ?? file.path;
 }
 
@@ -22,9 +26,10 @@ function formatLocation(comment: DiffReviewComment, file: ReviewFile | undefined
     return `${scopePrefix}${filePath}`;
   }
 
-  const range = comment.endLine != null && comment.endLine !== comment.startLine
-    ? `${comment.startLine}-${comment.endLine}`
-    : `${comment.startLine}`;
+  const range =
+    comment.endLine != null && comment.endLine !== comment.startLine
+      ? `${comment.startLine}-${comment.endLine}`
+      : `${comment.startLine}`;
 
   if (comment.scope === "all-files") {
     return `${scopePrefix}${filePath}:${range}`;

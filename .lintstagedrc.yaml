@@ -1,0 +1,8 @@
+"*.{js,mjs,cjs,ts,mts,cts}":
+  - eslint --fix
+  - prettier --write
+"*.{json,yaml,yml,html,css}":
+  - prettier --write
+"*.md":
+  - markdownlint-cli2 --fix
+  - prettier --write
