@@ -7,6 +7,7 @@
     "check": "tsgo --noEmit",
     "lint": "eslint . && markdownlint-cli2",
     "lint:fix": "eslint . --fix && markdownlint-cli2 --fix && prettier --write .",
+    "test": "vitest",
     "prepare": "husky"
   },
   "pi": {
@@ -32,6 +33,7 @@
     "markdownlint-cli2": "^0.22.1",
     "prettier": "^3.8.3",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.59.0"
+    "typescript-eslint": "^8.59.0",
+    "vitest": "^3.2.4"
   }
 }

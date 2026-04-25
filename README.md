@@ -36,3 +36,30 @@ Glimpse now supports Windows. To build the native host during install you need:
 
 - .NET 8 SDK
 - Microsoft Edge WebView2 Runtime
+
+## Automated E2E testing
+
+For CI-style E2E, you can replace the native webapp with a mock adapter.
+
+```bash
+AGENT_DIFF_REVIEW_UI_ADAPTER=mock pi --no-extensions -e ./src/index.ts
+```
+
+Optional mock controls:
+
+- `AGENT_DIFF_REVIEW_MOCK_MODE=cancel` to simulate cancel
+- `AGENT_DIFF_REVIEW_MOCK_SUBMIT_JSON='{"type":"submit","overallComment":"...","comments":[]}'` to inject a fixed submit payload
+- `AGENT_DIFF_REVIEW_MOCK_DELAY_MS=250` to simulate async UI delay
+
+This lets tmux drive `/diff-review` and assert that the resulting prompt is inserted into the pi editor without depending on native window automation.
+
+Run the included Vitest E2E suite:
+
+```bash
+pnpm test
+```
+
+Included scenarios:
+
+- mock submit inserts feedback into the harness
+- mock cancel shows the cancellation notification
