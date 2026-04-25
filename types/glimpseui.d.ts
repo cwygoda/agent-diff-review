@@ -2,7 +2,13 @@ declare module "glimpseui" {
   import { EventEmitter } from "node:events";
 
   export type FollowMode = "snap" | "spring";
-  export type CursorAnchor = "top-left" | "top-right" | "right" | "bottom-right" | "bottom-left" | "left";
+  export type CursorAnchor =
+    | "top-left"
+    | "top-right"
+    | "right"
+    | "bottom-right"
+    | "bottom-left"
+    | "left";
 
   export interface GlimpseOpenOptions {
     width?: number;
@@ -85,5 +91,8 @@ declare module "glimpseui" {
   }
 
   export function open(html: string, options?: GlimpseOpenOptions): GlimpseWindow;
-  export function prompt<T = unknown>(html: string, options?: GlimpseOpenOptions): Promise<T | null>;
+  export function prompt<T = unknown>(
+    html: string,
+    options?: GlimpseOpenOptions,
+  ): Promise<T | null>;
 }

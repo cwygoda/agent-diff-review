@@ -56,7 +56,10 @@ export interface ReviewRequestFilePayload {
   scope: ReviewScope;
 }
 
-export type ReviewWindowMessage = ReviewSubmitPayload | ReviewCancelPayload | ReviewRequestFilePayload;
+export type ReviewWindowMessage =
+  | ReviewSubmitPayload
+  | ReviewCancelPayload
+  | ReviewRequestFilePayload;
 
 export interface ReviewFileDataMessage {
   type: "file-data";

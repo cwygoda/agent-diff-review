@@ -42,7 +42,9 @@ export default function (pi: ExtensionAPI) {
     activeWindow = null;
     try {
       windowToClose.close();
-    } catch {}
+    } catch {
+      // at least we tried
+    }
   }
 
   function showWaitingUI(ctx: ExtensionCommandContext): {
@@ -86,7 +88,10 @@ export default function (pi: ExtensionAPI) {
           ];
           return [
             borderTop,
-            ...lines.map((line) => `${theme.fg("border", "│")}${truncateToWidth(line, innerWidth, "...", true).padEnd(innerWidth, " ")}${theme.fg("border", "│")}`),
+            ...lines.map(
+              (line) =>
+                `${theme.fg("border", "│")}${truncateToWidth(line, innerWidth, "...", true).padEnd(innerWidth, " ")}${theme.fg("border", "│")}`,
+            ),
             borderBottom,
           ];
         },
@@ -141,7 +146,10 @@ export default function (pi: ExtensionAPI) {
       window.send(`window.__reviewReceive(${payload});`);
     };
 
-    const loadContents = (file: ReviewFile, scope: ReviewRequestFilePayload["scope"]): Promise<ReviewFileContents> => {
+    const loadContents = (
+      file: ReviewFile,
+      scope: ReviewRequestFilePayload["scope"],
+    ): Promise<ReviewFileContents> => {
       const cacheKey = `${scope}:${file.id}`;
       const cached = contentCache.get(cacheKey);
       if (cached != null) return cached;
@@ -154,86 +162,88 @@ export default function (pi: ExtensionAPI) {
     ctx.ui.notify("Opened native review window.", "info");
 
     try {
-      const terminalMessagePromise = new Promise<ReviewSubmitPayload | ReviewCancelPayload | null>((resolve, reject) => {
-        let settled = false;
+      const terminalMessagePromise = new Promise<ReviewSubmitPayload | ReviewCancelPayload | null>(
+        (resolve, reject) => {
+          let settled = false;
 
-        const cleanup = (): void => {
-          window.removeListener("message", onMessage);
-          window.removeListener("closed", onClosed);
-          window.removeListener("error", onError);
-          if (activeWindow === window) {
-            activeWindow = null;
-          }
-        };
+          const cleanup = (): void => {
+            window.removeListener("message", onMessage);
+            window.removeListener("closed", onClosed);
+            window.removeListener("error", onError);
+            if (activeWindow === window) {
+              activeWindow = null;
+            }
+          };
 
-        const settle = (value: ReviewSubmitPayload | ReviewCancelPayload | null): void => {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          resolve(value);
-        };
+          const settle = (value: ReviewSubmitPayload | ReviewCancelPayload | null): void => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            resolve(value);
+          };
 
-        const handleRequestFile = async (message: ReviewRequestFilePayload): Promise<void> => {
-          const file = fileMap.get(message.fileId);
-          if (file == null) {
-            sendWindowMessage({
-              type: "file-error",
-              requestId: message.requestId,
-              fileId: message.fileId,
-              scope: message.scope,
-              message: "Unknown file requested.",
-            });
-            return;
-          }
+          const handleRequestFile = async (message: ReviewRequestFilePayload): Promise<void> => {
+            const file = fileMap.get(message.fileId);
+            if (file == null) {
+              sendWindowMessage({
+                type: "file-error",
+                requestId: message.requestId,
+                fileId: message.fileId,
+                scope: message.scope,
+                message: "Unknown file requested.",
+              });
+              return;
+            }
 
-          try {
-            const contents = await loadContents(file, message.scope);
-            sendWindowMessage({
-              type: "file-data",
-              requestId: message.requestId,
-              fileId: message.fileId,
-              scope: message.scope,
-              originalContent: contents.originalContent,
-              modifiedContent: contents.modifiedContent,
-            });
-          } catch (error) {
-            const messageText = error instanceof Error ? error.message : String(error);
-            sendWindowMessage({
-              type: "file-error",
-              requestId: message.requestId,
-              fileId: message.fileId,
-              scope: message.scope,
-              message: messageText,
-            });
-          }
-        };
+            try {
+              const contents = await loadContents(file, message.scope);
+              sendWindowMessage({
+                type: "file-data",
+                requestId: message.requestId,
+                fileId: message.fileId,
+                scope: message.scope,
+                originalContent: contents.originalContent,
+                modifiedContent: contents.modifiedContent,
+              });
+            } catch (error) {
+              const messageText = error instanceof Error ? error.message : String(error);
+              sendWindowMessage({
+                type: "file-error",
+                requestId: message.requestId,
+                fileId: message.fileId,
+                scope: message.scope,
+                message: messageText,
+              });
+            }
+          };
 
-        const onMessage = (data: unknown): void => {
-          const message = data as ReviewWindowMessage;
-          if (isRequestFilePayload(message)) {
-            void handleRequestFile(message);
-            return;
-          }
-          if (isSubmitPayload(message) || isCancelPayload(message)) {
-            settle(message);
-          }
-        };
+          const onMessage = (data: unknown): void => {
+            const message = data as ReviewWindowMessage;
+            if (isRequestFilePayload(message)) {
+              void handleRequestFile(message);
+              return;
+            }
+            if (isSubmitPayload(message) || isCancelPayload(message)) {
+              settle(message);
+            }
+          };
 
-        const onClosed = (): void => {
-          settle(null);
-        };
+          const onClosed = (): void => {
+            settle(null);
+          };
 
-        const onError = (error: Error): void => {
-          if (settled) return;
-          settled = true;
-          cleanup();
-          reject(error);
-        };
+          const onError = (error: Error): void => {
+            if (settled) return;
+            settled = true;
+            cleanup();
+            reject(error);
+          };
 
-        window.on("message", onMessage);
-        window.on("closed", onClosed);
-        window.on("error", onError);
-      });
+          window.on("message", onMessage);
+          window.on("closed", onClosed);
+          window.on("error", onError);
+        },
+      );
 
       const result = await Promise.race([
         terminalMessagePromise.then((message) => ({ type: "window" as const, message })),
