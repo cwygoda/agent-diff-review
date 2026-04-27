@@ -4,11 +4,12 @@
   "version": "0.2.0",
   "type": "module",
   "scripts": {
+    "build:css": "tailwindcss -i ./web/styles.css -o ./web/styles.compiled.css --minify",
     "check": "tsgo --noEmit",
     "lint": "eslint . && markdownlint-cli2",
     "lint:fix": "eslint . --fix && markdownlint-cli2 --fix && prettier --write .",
     "test": "vitest",
-    "prepare": "husky"
+    "prepare": "npm run build:css && husky"
   },
   "pi": {
     "extensions": [
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@tailwindcss/cli": "^4.1.14",
     "@types/node": "^24.5.2",
     "@typescript/native-preview": "^7.0.0-dev.20260313.1",
     "eslint": "^10.2.1",
@@ -32,6 +34,7 @@
     "lint-staged": "^16.4.0",
     "markdownlint-cli2": "^0.22.1",
     "prettier": "^3.8.3",
+    "tailwindcss": "^4.1.14",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.59.0",
     "vitest": "^3.2.4"

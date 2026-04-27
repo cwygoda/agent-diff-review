@@ -10,6 +10,16 @@ Monaco.
 
 Come back later.
 
+### Build web styles
+
+CSS is built at install time via `prepare`.
+
+To rebuild manually:
+
+```bash
+npm run build:css
+```
+
 ## What it does
 
 Adds a `/diff-review` command to your agent.
@@ -28,7 +38,7 @@ The command:
 
 - macOS, Linux, or Windows
 - Node.js 20+
-- internet access for the Tailwind and Monaco CDNs used by the review window
+- internet access for the Monaco CDN used by the review window
 
 ### Windows notes
 

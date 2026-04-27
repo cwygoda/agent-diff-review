@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@source "./index.html";
+@source "./app.js";
+
+@theme {
+  --color-review-bg: #0d1117;
+  --color-review-panel: #161b22;
+  --color-review-border: #30363d;
+  --color-review-text: #c9d1d9;
+  --color-review-muted: #8b949e;
+  --color-review-accent: #58a6ff;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 999px;
+  border: 3px solid #161b22;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.review-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(1, 4, 9, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.review-modal-card {
+  width: min(760px, 92vw);
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5);
+  padding: 24px;
+}
+
+#editor-container {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#editor-container > div,
+#editor-container .monaco-diff-editor,
+#editor-container .monaco-editor {
+  height: 100% !important;
+}
+
+.monaco-editor .view-zones {
+  z-index: 10;
+}
+
+.view-zone-container {
+  padding: 8px 16px 10px 16px;
+  border-top: 1px solid #30363d;
+  border-bottom: 1px solid #30363d;
+  background: #161b22;
+  overflow: visible;
+}
+
+.monaco-editor .review-comment-line-original {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.monaco-editor .review-comment-line-modified {
+  background: rgba(88, 166, 255, 0.15);
+}
+
+.monaco-editor .review-comment-glyph-original,
+.monaco-editor .review-comment-glyph-modified {
+  border-radius: 999px;
+  width: 8px !important;
+  height: 8px !important;
+  margin-left: 6px;
+  margin-top: 5px;
+  cursor: pointer;
+}
+
+.monaco-editor .review-comment-glyph-original {
+  background: #d29922;
+}
+
+.monaco-editor .review-comment-glyph-modified {
+  background: #58a6ff;
+}
+
+.monaco-editor .review-glyph-plus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3E%3Cpath fill='%23c9d1d9' d='M7.75 2a.75.75 0 0 1 .75.75V7h4.25a.75.75 0 0 1 0 1.5H8.5v4.25a.75.75 0 0 1-1.5 0V8.5H2.75a.75.75 0 0 1 0-1.5H7V2.75A.75.75 0 0 1 7.75 2Z'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px;
+  background-color: #238636;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 2px;
+  margin-top: 2px;
+  width: 16px !important;
+  height: 16px !important;
+  box-shadow: 0 0 0 1px rgba(240, 246, 252, 0.08);
+}
