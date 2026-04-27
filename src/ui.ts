@@ -13,6 +13,10 @@ function escapeForInlineScript(value: string): string {
 export function buildReviewHtml(data: ReviewWindowData): string {
   const templateHtml = readFileSync(join(webDir, "index.html"), "utf8");
   const appJs = readFileSync(join(webDir, "app.js"), "utf8");
+  const css = readFileSync(join(webDir, "styles.compiled.css"), "utf8");
   const payload = escapeForInlineScript(JSON.stringify(data));
-  return templateHtml.replace("__INLINE_DATA__", payload).replace("__INLINE_JS__", appJs);
+  return templateHtml
+    .replace("__INLINE_CSS__", css.replace(/<\/style/gi, "<\\/style"))
+    .replace("__INLINE_DATA__", payload)
+    .replace("__INLINE_JS__", appJs);
 }
