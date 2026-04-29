@@ -8,3 +8,4 @@ globs:
 ignores:
   - "node_modules/**"
   - ".git/**"
+  - "CHANGELOG.md"
