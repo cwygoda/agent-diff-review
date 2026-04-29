@@ -46,6 +46,10 @@ Glimpse now supports Windows. To build the native host during install you need:
 - .NET 8 SDK
 - Microsoft Edge WebView2 Runtime
 
+## Commit message convention
+
+Releases are automated with semantic-release and follow [Conventional Commits](https://www.conventionalcommits.org/).
+
 ## Automated E2E testing
 
 For CI-style E2E, you can replace the native webapp with a mock adapter.
