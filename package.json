@@ -1,6 +1,6 @@
 {
   "name": "@cwygoda/agent-diff-review",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "build:web": "npm run build:web:css && npm run build:web:js",
