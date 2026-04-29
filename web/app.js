@@ -1,4 +1,49 @@
-const reviewData = JSON.parse(document.getElementById("diff-review-data").textContent || "{}");
+import * as monaco from "monaco-editor";
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker&inline";
+import cssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker&inline";
+import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker&inline";
+import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker&inline";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker&inline";
+
+self.MonacoEnvironment = {
+  getWorker(_workerId, label) {
+    switch (label) {
+      case "json":
+        return new jsonWorker();
+      case "css":
+      case "scss":
+      case "less":
+        return new cssWorker();
+      case "html":
+      case "handlebars":
+      case "razor":
+        return new htmlWorker();
+      case "typescript":
+      case "javascript":
+        return new tsWorker();
+      default:
+        return new editorWorker();
+    }
+  },
+};
+
+function parseReviewData() {
+  const dataNode = document.getElementById("diff-review-data");
+  if (!dataNode) return { repoRoot: "", files: [] };
+
+  try {
+    const parsed = JSON.parse(dataNode.textContent || "{}");
+    const files = Array.isArray(parsed.files) ? parsed.files : [];
+    return {
+      repoRoot: typeof parsed.repoRoot === "string" ? parsed.repoRoot : "",
+      files,
+    };
+  } catch {
+    return { repoRoot: "", files: [] };
+  }
+}
+
+const reviewData = parseReviewData();
 
 const state = {
   activeFileId: null,
@@ -47,7 +92,6 @@ const toggleWrapButton = document.getElementById("toggle-wrap-button");
 repoRootEl.textContent = reviewData.repoRoot || "";
 windowTitleEl.textContent = "Review";
 
-let monacoApi = null;
 let diffEditor = null;
 let originalModel = null;
 let modifiedModel = null;
@@ -761,7 +805,7 @@ function syncViewZones() {
 }
 
 function updateDecorations() {
-  if (!diffEditor || !monacoApi) return;
+  if (!diffEditor) return;
   const file = activeFile();
   const comments = file
     ? state.comments.filter(
@@ -776,7 +820,7 @@ function updateDecorations() {
 
   for (const comment of comments) {
     const range = {
-      range: new monacoApi.Range(comment.startLine, 1, comment.startLine, 1),
+      range: new monaco.Range(comment.startLine, 1, comment.startLine, 1),
       options: {
         isWholeLine: true,
         className:
@@ -847,15 +891,15 @@ function getMountedContents(file, scope = state.currentScope) {
 }
 
 function mountFile(options = {}) {
-  if (!diffEditor || !monacoApi) return;
+  if (!diffEditor) return;
   const file = activeFile();
   if (!file) {
     currentFileLabelEl.textContent = "No file selected";
     clearViewZones();
     if (originalModel) originalModel.dispose();
     if (modifiedModel) modifiedModel.dispose();
-    originalModel = monacoApi.editor.createModel("", "plaintext");
-    modifiedModel = monacoApi.editor.createModel("", "plaintext");
+    originalModel = monaco.editor.createModel("", "plaintext");
+    modifiedModel = monaco.editor.createModel("", "plaintext");
     diffEditor.setModel({ original: originalModel, modified: modifiedModel });
     applyEditorOptions();
     updateDecorations();
@@ -877,8 +921,8 @@ function mountFile(options = {}) {
   if (originalModel) originalModel.dispose();
   if (modifiedModel) modifiedModel.dispose();
 
-  originalModel = monacoApi.editor.createModel(contents.originalContent, language);
-  modifiedModel = monacoApi.editor.createModel(contents.modifiedContent, language);
+  originalModel = monaco.editor.createModel(contents.originalContent, language);
+  modifiedModel = monaco.editor.createModel(contents.modifiedContent, language);
 
   diffEditor.setModel({ original: originalModel, modified: modifiedModel });
   applyEditorOptions();
@@ -916,7 +960,7 @@ function updateCommentsUI() {
 function renderAll(options = {}) {
   renderTree();
   submitButton.disabled = false;
-  if (diffEditor && monacoApi) {
+  if (diffEditor) {
     mountFile(options);
     requestAnimationFrame(() => {
       layoutEditor();
@@ -955,14 +999,14 @@ function createGlyphHoverActions(editor, side) {
 
     const target = event.target;
     if (
-      target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
-      target.type === monacoApi.editor.MouseTargetType.GUTTER_LINE_NUMBERS
+      target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
+      target.type === monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS
     ) {
       const line = target.position?.lineNumber;
       if (!line) return;
       hoverDecoration = editor.deltaDecorations(hoverDecoration, [
         {
-          range: new monacoApi.Range(line, 1, line, 1),
+          range: new monaco.Range(line, 1, line, 1),
           options: { glyphMarginClassName: "review-glyph-plus" },
         },
       ]);
@@ -981,8 +1025,8 @@ function createGlyphHoverActions(editor, side) {
 
     const target = event.target;
     if (
-      target.type === monacoApi.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
-      target.type === monacoApi.editor.MouseTargetType.GUTTER_LINE_NUMBERS
+      target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
+      target.type === monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS
     ) {
       const line = target.position?.lineNumber;
       if (!line) return;
@@ -1020,67 +1064,57 @@ window.__reviewReceive = function (message) {
 };
 
 function setupMonaco() {
-  window.require.config({
-    paths: {
-      vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs",
+  monaco.editor.defineTheme("review-dark", {
+    base: "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": "#0d1117",
+      "diffEditor.insertedTextBackground": "#2ea04326",
+      "diffEditor.removedTextBackground": "#f8514926",
     },
   });
+  monaco.editor.setTheme("review-dark");
 
-  window.require(["vs/editor/editor.main"], function () {
-    monacoApi = window.monaco;
-
-    monacoApi.editor.defineTheme("review-dark", {
-      base: "vs-dark",
-      inherit: true,
-      rules: [],
-      colors: {
-        "editor.background": "#0d1117",
-        "diffEditor.insertedTextBackground": "#2ea04326",
-        "diffEditor.removedTextBackground": "#f8514926",
-      },
-    });
-    monacoApi.editor.setTheme("review-dark");
-
-    diffEditor = monacoApi.editor.createDiffEditor(editorContainerEl, {
-      automaticLayout: true,
-      renderSideBySide: activeFileShowsDiff(),
-      readOnly: true,
-      originalEditable: false,
-      minimap: {
-        enabled: true,
-        renderCharacters: false,
-        showSlider: "always",
-        size: "proportional",
-      },
-      renderOverviewRuler: true,
-      diffWordWrap: "on",
-      scrollBeyondLastLine: false,
-      lineNumbersMinChars: 4,
-      glyphMargin: true,
-      folding: true,
-      lineDecorationsWidth: 10,
-      overviewRulerBorder: false,
-      wordWrap: "on",
-    });
-
-    createGlyphHoverActions(diffEditor.getOriginalEditor(), "original");
-    createGlyphHoverActions(diffEditor.getModifiedEditor(), "modified");
-
-    if (typeof ResizeObserver !== "undefined") {
-      editorResizeObserver = new ResizeObserver(() => {
-        layoutEditor();
-      });
-      editorResizeObserver.observe(editorContainerEl);
-    }
-
-    requestAnimationFrame(() => {
-      layoutEditor();
-      setTimeout(layoutEditor, 50);
-      setTimeout(layoutEditor, 150);
-    });
-
-    mountFile();
+  diffEditor = monaco.editor.createDiffEditor(editorContainerEl, {
+    automaticLayout: true,
+    renderSideBySide: activeFileShowsDiff(),
+    readOnly: true,
+    originalEditable: false,
+    minimap: {
+      enabled: true,
+      renderCharacters: false,
+      showSlider: "always",
+      size: "proportional",
+    },
+    renderOverviewRuler: true,
+    diffWordWrap: "on",
+    scrollBeyondLastLine: false,
+    lineNumbersMinChars: 4,
+    glyphMargin: true,
+    folding: true,
+    lineDecorationsWidth: 10,
+    overviewRulerBorder: false,
+    wordWrap: "on",
   });
+
+  createGlyphHoverActions(diffEditor.getOriginalEditor(), "original");
+  createGlyphHoverActions(diffEditor.getModifiedEditor(), "modified");
+
+  if (typeof ResizeObserver !== "undefined") {
+    editorResizeObserver = new ResizeObserver(() => {
+      layoutEditor();
+    });
+    editorResizeObserver.observe(editorContainerEl);
+  }
+
+  requestAnimationFrame(() => {
+    layoutEditor();
+    setTimeout(layoutEditor, 50);
+    setTimeout(layoutEditor, 150);
+  });
+
+  mountFile();
 }
 
 function switchScope(scope) {

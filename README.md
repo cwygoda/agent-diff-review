@@ -10,14 +10,14 @@ Monaco.
 
 Come back later.
 
-### Build web styles
+### Build web assets
 
-CSS is built at install time via `prepare`.
+Web assets are built at install time via `prepare`.
 
 To rebuild manually:
 
 ```bash
-npm run build:css
+npm run build:web
 ```
 
 ## What it does
@@ -38,7 +38,6 @@ The command:
 
 - macOS, Linux, or Windows
 - Node.js 20+
-- internet access for the Monaco CDN used by the review window
 
 ### Windows notes
 
