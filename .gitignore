@@ -1,3 +1,3 @@
 .pi/hf-sessions/
 node_modules/
-web/styles.compiled.css
+web/dist/

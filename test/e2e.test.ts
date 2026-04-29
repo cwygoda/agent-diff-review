@@ -83,7 +83,12 @@ async function runPiTmuxScenario(options: ScenarioOptions = {}): Promise<string>
       encoding: "utf8",
     });
 
-    await sleep(1000);
+    await waitForPaneOutput(
+      sessionName,
+      (text) => text.includes("Press ctrl+o") || text.includes("/ commands"),
+      20000,
+    );
+    await sleep(500);
     execFileSync("tmux", ["send-keys", "-t", sessionName, "/diff-review", "Enter"], {
       encoding: "utf8",
     });
