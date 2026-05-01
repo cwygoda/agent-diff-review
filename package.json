@@ -2,8 +2,13 @@
   "name": "@cwygoda/agent-diff-review",
   "version": "0.1.0",
   "type": "module",
+  "bin": {
+    "agent-diff-review": "src/cli.ts"
+  },
   "scripts": {
     "build:web": "npm run build:web:css && npm run build:web:js",
+    "cli": "node --experimental-strip-types ./src/cli.ts",
+    "claude:review": "node --experimental-strip-types ./src/claude-ui.ts",
     "build:web:css": "tailwindcss -i ./web/styles.css -o ./web/dist/styles.css --minify",
     "build:web:js": "vite build",
     "check": "tsgo --noEmit",
