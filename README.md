@@ -60,7 +60,7 @@ npm run claude:review -- --output json
 npm run claude:review -- --output prompt --out /tmp/review-prompt.txt
 ```
 
-See [`docs/claude.md`](./docs/claude.md) for Claude workflow examples, execution-mode notes, and manual fallback.
+See [`docs/claude.md`](./docs/claude.md) for Claude workflow examples, tool integration, execution-mode notes, and manual fallback.
 
 ## Automated E2E testing
 

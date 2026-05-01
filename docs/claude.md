@@ -39,6 +39,24 @@ For automated tests/headless runs, use:
 AGENT_DIFF_REVIEW_UI_ADAPTER=mock npm run claude:review -- --output prompt
 ```
 
+## Claude tool integration
+
+A structured tool definition is included at:
+
+- `.claude/tools/diff-review.json`
+
+The tool executes:
+
+```bash
+npm run claude:tool
+```
+
+It expects JSON on stdin, for example:
+
+```bash
+echo '{"tool":"diff_review","input":{"scope":"git-diff"}}' | npm run claude:tool
+```
+
 ## Claude slash-command execution mode
 
 This repo expects Claude custom commands to run shell commands from `.claude/commands/*.md`.

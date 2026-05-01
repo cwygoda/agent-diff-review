@@ -1,0 +1,20 @@
+{
+  "name": "diff_review",
+  "description": "Collect review context from git changes and return structured prompt payload.",
+  "command": "npm run claude:tool",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "cwd": {
+        "type": "string",
+        "description": "Repository path (defaults to current working directory)."
+      },
+      "scope": {
+        "type": "string",
+        "enum": ["git-diff", "last-commit", "all-files"],
+        "description": "Which file scope to collect."
+      }
+    },
+    "additionalProperties": false
+  }
+}

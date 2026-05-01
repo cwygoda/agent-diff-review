@@ -2,8 +2,9 @@
 import { writeFile } from "node:fs/promises";
 import { getReviewWindowData, loadReviewFileContents } from "./core/git.ts";
 import { CliArgumentError, parseFlagArgs, requireStringFlag } from "./core/cli-args.ts";
+import { buildReviewContextPrompt, fileInScope } from "./core/review-context.ts";
 import { createCommandRunner } from "./core/runner.ts";
-import type { ReviewFile, ReviewScope } from "./core/types.ts";
+import type { ReviewScope } from "./core/types.ts";
 
 type OutputMode = "prompt" | "json";
 
@@ -44,36 +45,6 @@ function parseArgs(argv: string[]): CliOptions {
   return { cwd, output: outputValue, scope: scopeValue, outFile };
 }
 
-function fileInScope(file: ReviewFile, scope: ReviewScope): boolean {
-  if (scope === "all-files") return true;
-  if (scope === "git-diff") return file.inGitDiff;
-  return file.inLastCommit;
-}
-
-function buildPrompt(
-  scope: ReviewScope,
-  files: Array<{ path: string; originalContent: string; modifiedContent: string }>,
-): string {
-  const header = [
-    "You are reviewing code changes.",
-    `Scope: ${scope}`,
-    "Provide actionable feedback with file paths and line ranges when possible.",
-    "",
-  ];
-
-  const body: string[] = [];
-  for (const file of files) {
-    body.push(`### File: ${file.path}`);
-    body.push("--- ORIGINAL ---");
-    body.push(file.originalContent || "(empty)");
-    body.push("--- MODIFIED ---");
-    body.push(file.modifiedContent || "(empty)");
-    body.push("");
-  }
-
-  return [...header, ...body].join("\n").trim();
-}
-
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const runner = createCommandRunner();
@@ -87,7 +58,7 @@ async function main(): Promise<void> {
     })),
   );
 
-  const prompt = buildPrompt(
+  const prompt = buildReviewContextPrompt(
     options.scope,
     hydrated.map(({ file, contents }) => ({
       path: file.path,
