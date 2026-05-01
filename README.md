@@ -50,6 +50,18 @@ Glimpse now supports Windows. To build the native host during install you need:
 
 Releases are automated with semantic-release and follow [Conventional Commits](https://www.conventionalcommits.org/).
 
+## Claude Code adapter (native UI)
+
+Open the Glimpse review window and emit the final prompt/JSON to stdout (and optional file):
+
+```bash
+npm run claude:review -- --output prompt
+npm run claude:review -- --output json
+npm run claude:review -- --output prompt --out /tmp/review-prompt.txt
+```
+
+See [`docs/claude.md`](./docs/claude.md) for Claude workflow examples, execution-mode notes, and manual fallback.
+
 ## Automated E2E testing
 
 For CI-style E2E, you can replace the native webapp with a mock adapter.
