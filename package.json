@@ -9,6 +9,7 @@
     "build:web": "npm run build:web:css && npm run build:web:js",
     "cli": "node --experimental-strip-types ./src/cli.ts",
     "claude:review": "node --experimental-strip-types ./src/claude-ui.ts",
+    "claude:tool": "node --experimental-strip-types ./src/claude-tool.ts",
     "build:web:css": "tailwindcss -i ./web/styles.css -o ./web/dist/styles.css --minify",
     "build:web:js": "vite build",
     "check": "tsgo --noEmit",

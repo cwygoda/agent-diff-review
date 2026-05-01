@@ -2,7 +2,9 @@
 
 Open the native diff-review window and wait for submission.
 
-Run:
+Prefer using the structured tool `diff_review` when available.
+
+Fallback command:
 `npm run claude:review -- --output prompt`
 
 If command execution is unavailable in this Claude environment, ask me to run this manually and paste the output.
