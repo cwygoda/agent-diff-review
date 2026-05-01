@@ -79,7 +79,7 @@ describe("getReviewWindowData", () => {
     const repoRoot = await createFixtureRepo();
     const pi = createPiLike();
 
-    const data = await getReviewWindowData(pi as never, repoRoot);
+    const data = await getReviewWindowData(pi, repoRoot);
 
     expect(data.repoRoot.endsWith(repoRoot)).toBe(true);
     expect(data.files.length).toBeGreaterThanOrEqual(2);

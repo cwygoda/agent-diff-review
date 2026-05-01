@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import type {
   ChangeStatus,
   ReviewFile,
@@ -8,6 +7,16 @@ import type {
   ReviewFileContents,
   ReviewScope,
 } from "./types.js";
+
+export interface ExecResult {
+  code: number;
+  stdout: string;
+  stderr: string;
+}
+
+export interface CommandRunner {
+  exec(command: string, args: string[], options: { cwd: string }): Promise<ExecResult>;
+}
 
 interface ChangedPath {
   status: ChangeStatus;
@@ -25,8 +34,8 @@ interface ReviewFileSeed {
   lastCommit: ReviewFileComparison | null;
 }
 
-async function runGit(pi: ExtensionAPI, repoRoot: string, args: string[]): Promise<string> {
-  const result = await pi.exec("git", args, { cwd: repoRoot });
+async function runGit(runner: CommandRunner, repoRoot: string, args: string[]): Promise<string> {
+  const result = await runner.exec("git", args, { cwd: repoRoot });
   if (result.code !== 0) {
     const message = result.stderr.trim() || result.stdout.trim() || `git ${args.join(" ")} failed`;
     throw new Error(message);
@@ -35,27 +44,27 @@ async function runGit(pi: ExtensionAPI, repoRoot: string, args: string[]): Promi
 }
 
 async function runGitAllowFailure(
-  pi: ExtensionAPI,
+  runner: CommandRunner,
   repoRoot: string,
   args: string[],
 ): Promise<string> {
-  const result = await pi.exec("git", args, { cwd: repoRoot });
+  const result = await runner.exec("git", args, { cwd: repoRoot });
   if (result.code !== 0) {
     return "";
   }
   return result.stdout;
 }
 
-export async function getRepoRoot(pi: ExtensionAPI, cwd: string): Promise<string> {
-  const result = await pi.exec("git", ["rev-parse", "--show-toplevel"], { cwd });
+export async function getRepoRoot(runner: CommandRunner, cwd: string): Promise<string> {
+  const result = await runner.exec("git", ["rev-parse", "--show-toplevel"], { cwd });
   if (result.code !== 0) {
     throw new Error("Not inside a git repository.");
   }
   return result.stdout.trim();
 }
 
-async function hasHead(pi: ExtensionAPI, repoRoot: string): Promise<boolean> {
-  const result = await pi.exec("git", ["rev-parse", "--verify", "HEAD"], { cwd: repoRoot });
+async function hasHead(runner: CommandRunner, repoRoot: string): Promise<boolean> {
+  const result = await runner.exec("git", ["rev-parse", "--verify", "HEAD"], { cwd: repoRoot });
   return result.code === 0;
 }
 
@@ -193,12 +202,12 @@ function createReviewFile(seed: ReviewFileSeed): ReviewFile {
 }
 
 async function getRevisionContent(
-  pi: ExtensionAPI,
+  runner: CommandRunner,
   repoRoot: string,
   revision: string,
   path: string,
 ): Promise<string> {
-  const result = await pi.exec("git", ["show", `${revision}:${path}`], { cwd: repoRoot });
+  const result = await runner.exec("git", ["show", `${revision}:${path}`], { cwd: repoRoot });
   if (result.code !== 0) {
     return "";
   }
@@ -283,24 +292,31 @@ function upsertSeed(
 }
 
 export async function getReviewWindowData(
-  pi: ExtensionAPI,
+  runner: CommandRunner,
   cwd: string,
 ): Promise<{ repoRoot: string; files: ReviewFile[] }> {
-  const repoRoot = await getRepoRoot(pi, cwd);
-  const repositoryHasHead = await hasHead(pi, repoRoot);
+  const repoRoot = await getRepoRoot(runner, cwd);
+  const repositoryHasHead = await hasHead(runner, repoRoot);
 
   const trackedDiffOutput = repositoryHasHead
-    ? await runGit(pi, repoRoot, ["diff", "--find-renames", "-M", "--name-status", "HEAD", "--"])
+    ? await runGit(runner, repoRoot, [
+        "diff",
+        "--find-renames",
+        "-M",
+        "--name-status",
+        "HEAD",
+        "--",
+      ])
     : "";
-  const untrackedOutput = await runGitAllowFailure(pi, repoRoot, [
+  const untrackedOutput = await runGitAllowFailure(runner, repoRoot, [
     "ls-files",
     "--others",
     "--exclude-standard",
   ]);
-  const trackedFilesOutput = await runGitAllowFailure(pi, repoRoot, ["ls-files", "--cached"]);
-  const deletedFilesOutput = await runGitAllowFailure(pi, repoRoot, ["ls-files", "--deleted"]);
+  const trackedFilesOutput = await runGitAllowFailure(runner, repoRoot, ["ls-files", "--cached"]);
+  const deletedFilesOutput = await runGitAllowFailure(runner, repoRoot, ["ls-files", "--deleted"]);
   const lastCommitOutput = repositoryHasHead
-    ? await runGitAllowFailure(pi, repoRoot, [
+    ? await runGitAllowFailure(runner, repoRoot, [
         "diff-tree",
         "--root",
         "--find-renames",
@@ -379,7 +395,7 @@ export async function getReviewWindowData(
 }
 
 export async function loadReviewFileContents(
-  pi: ExtensionAPI,
+  runner: CommandRunner,
   repoRoot: string,
   file: ReviewFile,
   scope: ReviewScope,
@@ -406,13 +422,13 @@ export async function loadReviewFileContents(
   const originalContent =
     comparison.oldPath == null
       ? ""
-      : await getRevisionContent(pi, repoRoot, originalRevision, comparison.oldPath);
+      : await getRevisionContent(runner, repoRoot, originalRevision, comparison.oldPath);
   const modifiedContent =
     comparison.newPath == null
       ? ""
       : modifiedRevision == null
         ? await getWorkingTreeContent(repoRoot, comparison.newPath)
-        : await getRevisionContent(pi, repoRoot, modifiedRevision, comparison.newPath);
+        : await getRevisionContent(runner, repoRoot, modifiedRevision, comparison.newPath);
 
   return {
     originalContent,
