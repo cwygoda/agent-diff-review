@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
 import { open } from "glimpseui";
-import type { ReviewScope } from "./types.js";
+import type { ReviewScope } from "./core/types.js";
 import type {
   ReviewCancelPayload,
   ReviewFile,
@@ -9,7 +9,7 @@ import type {
   ReviewRequestFilePayload,
   ReviewSubmitPayload,
   ReviewWindowMessage,
-} from "./types.js";
+} from "./core/types.js";
 import { buildReviewHtml } from "./ui.js";
 
 export interface ReviewFeedbackAdapter {
