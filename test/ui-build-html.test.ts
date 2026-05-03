@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildReviewHtml } from "../src/ui.js";
+import { buildReviewHtml } from "../src/review-html.js";
 import type { ReviewWindowData } from "../src/core/types.js";
 
 function extractReviewDataJson(html: string): string {
