@@ -11,7 +11,7 @@ import type {
   ReviewWindowMessage,
 } from "./core/types.js";
 import { parseMockSubmit } from "./core/mock-submit.js";
-import { buildReviewHtml } from "./ui.js";
+import { buildReviewHtml } from "./review-html.js";
 
 export interface ReviewFeedbackAdapter {
   readonly id: string;

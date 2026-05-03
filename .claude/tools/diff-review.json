@@ -1,7 +1,7 @@
 {
   "name": "diff_review",
   "description": "Collect review context from git changes and return structured prompt payload.",
-  "command": "npm run claude:tool",
+  "command": "agent-diff-review-claude",
   "input_schema": {
     "type": "object",
     "properties": {

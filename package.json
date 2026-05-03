@@ -3,12 +3,24 @@
   "version": "0.1.0",
   "type": "module",
   "bin": {
-    "agent-diff-review": "src/cli.ts"
+    "agent-diff-review": "dist/ui.js",
+    "agent-diff-review-claude": "dist/claude-tool.js"
+  },
+  "files": [
+    "dist/",
+    "scripts/",
+    ".claude/",
+    "web/dist/",
+    "types/"
+  ],
+  "engines": {
+    "node": ">=22.6.0"
   },
   "scripts": {
+    "build:node": "tsc -p tsconfig.build.json",
     "build:web": "npm run build:web:css && npm run build:web:js",
     "cli": "node --experimental-strip-types ./src/cli.ts",
-    "claude:review": "node --experimental-strip-types ./src/claude-ui.ts",
+    "claude:review": "node --experimental-strip-types ./src/ui.ts",
     "claude:tool": "node --experimental-strip-types ./src/claude-tool.ts",
     "build:web:css": "tailwindcss -i ./web/styles.css -o ./web/dist/styles.css --minify",
     "build:web:js": "vite build",
@@ -17,7 +29,8 @@
     "lint:fix": "eslint . --fix && markdownlint-cli2 --fix && prettier --write .",
     "test": "vitest",
     "release": "semantic-release",
-    "prepare": "npm run build:web && husky"
+    "postinstall": "node scripts/postinstall.js",
+    "prepare": "npm run build:node && npm run build:web && husky"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

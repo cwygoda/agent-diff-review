@@ -1,3 +1,4 @@
 .pi/hf-sessions/
 node_modules/
+dist/
 web/dist/
