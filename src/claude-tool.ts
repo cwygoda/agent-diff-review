@@ -24,11 +24,16 @@ async function readStdin(): Promise<string> {
 }
 
 function parseRequest(raw: string): ToolRequest {
-  const parsed = JSON.parse(raw) as ToolRequest;
-  if (parsed.tool !== "diff_review") {
+  const parsed = JSON.parse(raw) as unknown;
+  if (parsed == null || Array.isArray(parsed) || typeof parsed !== "object") {
+    throw new Error("Invalid request JSON: expected an object");
+  }
+
+  const request = parsed as ToolRequest;
+  if (request.tool !== "diff_review") {
     throw new Error("Unsupported tool. Expected tool=diff_review");
   }
-  return parsed;
+  return request;
 }
 
 async function main(): Promise<void> {
@@ -62,20 +67,16 @@ async function main(): Promise<void> {
   );
 
   process.stdout.write(
-    `${JSON.stringify(
-      {
-        ok: true,
-        result: {
-          repoRoot,
-          scope,
-          fileCount: hydrated.length,
-          files: hydrated.map(({ file, contents }) => ({ ...file, ...contents })),
-          prompt,
-        },
+    `${JSON.stringify({
+      ok: true,
+      result: {
+        repoRoot,
+        scope,
+        fileCount: hydrated.length,
+        files: hydrated.map(({ file, contents }) => ({ ...file, ...contents })),
+        prompt,
       },
-      null,
-      2,
-    )}\n`,
+    })}\n`,
   );
 }
 
