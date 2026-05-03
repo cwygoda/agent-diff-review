@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, test } from "vitest";
 
@@ -23,10 +23,10 @@ function createFixtureRepo(): string {
 describe("claude tool", () => {
   test("returns structured json", () => {
     const repoRoot = createFixtureRepo();
-    const entry = resolve(process.cwd(), "src", "claude-tool.ts");
+    const entry = new URL("../src/claude-tool.ts", import.meta.url);
 
     try {
-      const output = execFileSync("node", ["--experimental-strip-types", entry], {
+      const output = execFileSync("node", ["--experimental-strip-types", entry.pathname], {
         cwd: repoRoot,
         encoding: "utf8",
         input: JSON.stringify({ tool: "diff_review", input: { scope: "git-diff" } }),
@@ -39,6 +39,23 @@ describe("claude tool", () => {
       expect(parsed.ok).toBe(true);
       expect(parsed.result?.fileCount).toBeGreaterThan(0);
       expect(parsed.result?.prompt).toContain("You are reviewing code changes.");
+    } finally {
+      rmSync(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  test("rejects non-object input", () => {
+    const repoRoot = createFixtureRepo();
+    const entry = new URL("../src/claude-tool.ts", import.meta.url);
+
+    try {
+      expect(() =>
+        execFileSync("node", ["--experimental-strip-types", entry.pathname], {
+          cwd: repoRoot,
+          encoding: "utf8",
+          input: "null",
+        }),
+      ).toThrow();
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }

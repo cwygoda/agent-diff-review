@@ -11,7 +11,20 @@
       },
       "scope": {
         "type": "string",
-        "enum": ["git-diff", "last-commit", "all-files"],
+        "oneOf": [
+          {
+            "const": "git-diff",
+            "description": "Compare working tree changes against HEAD (tracked and untracked changes)."
+          },
+          {
+            "const": "last-commit",
+            "description": "Compare the last commit against its parent commit."
+          },
+          {
+            "const": "all-files",
+            "description": "Include all current text files from the working tree without diff comparison."
+          }
+        ],
         "description": "Which file scope to collect."
       }
     },

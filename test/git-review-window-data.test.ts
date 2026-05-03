@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, test } from "vitest";
-import { getReviewWindowData } from "../src/core/git.js";
+import { getReviewWindowData, loadReviewFileContents } from "../src/core/git.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -94,5 +94,29 @@ describe("getReviewWindowData", () => {
     expect(untracked).toBeDefined();
     expect(untracked?.inGitDiff).toBe(true);
     expect(untracked?.gitDiff?.status).toBe("added");
+  });
+
+  test("last-commit scope handles single-commit repositories without HEAD^", async () => {
+    const repoRoot = mkdtempSync(join(tmpdir(), "agent-diff-review-git-single-"));
+    repoDirs.push(repoRoot);
+
+    await run("git", ["init"], repoRoot);
+    await run("git", ["config", "user.email", "e2e@example.com"], repoRoot);
+    await run("git", ["config", "user.name", "E2E"], repoRoot);
+
+    writeFileSync(join(repoRoot, "first.ts"), "export const first = 1;\n", "utf8");
+    await run("git", ["add", "first.ts"], repoRoot);
+    await run("git", ["commit", "-m", "first"], repoRoot);
+
+    const pi = createPiLike();
+    const data = await getReviewWindowData(pi, repoRoot);
+    const firstFile = data.files.find((file) => file.path === "first.ts");
+
+    expect(firstFile).toBeDefined();
+    if (firstFile == null) return;
+
+    const contents = await loadReviewFileContents(pi, repoRoot, firstFile, "last-commit");
+    expect(contents.originalContent).toBe("");
+    expect(contents.modifiedContent).toContain("export const first = 1;");
   });
 });

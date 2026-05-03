@@ -34,6 +34,46 @@ interface ReviewFileSeed {
   lastCommit: ReviewFileComparison | null;
 }
 
+const BINARY_EXTENSIONS = new Set([
+  ".7z",
+  ".a",
+  ".avi",
+  ".avif",
+  ".bin",
+  ".bmp",
+  ".class",
+  ".dll",
+  ".dylib",
+  ".eot",
+  ".exe",
+  ".gif",
+  ".gz",
+  ".ico",
+  ".jar",
+  ".jpeg",
+  ".jpg",
+  ".lockb",
+  ".map",
+  ".mov",
+  ".mp3",
+  ".mp4",
+  ".o",
+  ".otf",
+  ".pdf",
+  ".png",
+  ".pyc",
+  ".so",
+  ".svgz",
+  ".tar",
+  ".ttf",
+  ".wasm",
+  ".webm",
+  ".webp",
+  ".woff",
+  ".woff2",
+  ".zip",
+]);
+
 async function runGit(runner: CommandRunner, repoRoot: string, args: string[]): Promise<string> {
   const result = await runner.exec("git", args, { cwd: repoRoot });
   if (result.code !== 0) {
@@ -65,6 +105,15 @@ export async function getRepoRoot(runner: CommandRunner, cwd: string): Promise<s
 
 async function hasHead(runner: CommandRunner, repoRoot: string): Promise<boolean> {
   const result = await runner.exec("git", ["rev-parse", "--verify", "HEAD"], { cwd: repoRoot });
+  return result.code === 0;
+}
+
+async function hasRevision(
+  runner: CommandRunner,
+  repoRoot: string,
+  revision: string,
+): Promise<boolean> {
+  const result = await runner.exec("git", ["rev-parse", "--verify", revision], { cwd: repoRoot });
   return result.code === 0;
 }
 
@@ -229,47 +278,7 @@ function isReviewableFilePath(path: string): boolean {
 
   if (fileName.length === 0) return false;
 
-  const binaryExtensions = new Set([
-    ".7z",
-    ".a",
-    ".avi",
-    ".avif",
-    ".bin",
-    ".bmp",
-    ".class",
-    ".dll",
-    ".dylib",
-    ".eot",
-    ".exe",
-    ".gif",
-    ".gz",
-    ".ico",
-    ".jar",
-    ".jpeg",
-    ".jpg",
-    ".lockb",
-    ".map",
-    ".mov",
-    ".mp3",
-    ".mp4",
-    ".o",
-    ".otf",
-    ".pdf",
-    ".png",
-    ".pyc",
-    ".so",
-    ".svgz",
-    ".tar",
-    ".ttf",
-    ".wasm",
-    ".webm",
-    ".webp",
-    ".woff",
-    ".woff2",
-    ".zip",
-  ]);
-
-  if (binaryExtensions.has(extension)) return false;
+  if (BINARY_EXTENSIONS.has(extension)) return false;
   if (fileName.endsWith(".min.js") || fileName.endsWith(".min.css")) return false;
 
   return true;
@@ -418,9 +427,11 @@ export async function loadReviewFileContents(
 
   const originalRevision = scope === "git-diff" ? "HEAD" : "HEAD^";
   const modifiedRevision = scope === "git-diff" ? null : "HEAD";
+  const hasOriginalRevision =
+    scope === "git-diff" ? true : await hasRevision(runner, repoRoot, originalRevision);
 
   const originalContent =
-    comparison.oldPath == null
+    comparison.oldPath == null || !hasOriginalRevision
       ? ""
       : await getRevisionContent(runner, repoRoot, originalRevision, comparison.oldPath);
   const modifiedContent =
