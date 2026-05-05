@@ -1,6 +1,7 @@
 {
   "name": "@cwygoda/agent-diff-review-claude",
   "version": "0.1.0",
+  "description": "Claude tool integration for agent diff review.",
   "type": "module",
   "bin": {
     "agent-diff-review-claude": "dist/claude-tool.js",
