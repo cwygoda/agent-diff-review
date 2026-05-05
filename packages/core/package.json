@@ -1,6 +1,7 @@
 {
   "name": "@cwygoda/agent-diff-review-core",
   "version": "0.1.0",
+  "description": "Shared core logic for agent diff review workflows.",
   "type": "module",
   "files": ["dist/"],
   "exports": {
