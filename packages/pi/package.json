@@ -1,9 +1,13 @@
 {
   "name": "@cwygoda/agent-diff-review-pi",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Pi extension for agent diff review.",
   "type": "module",
-  "files": ["dist/", "web/dist/", "web/index.html"],
+  "files": [
+    "dist/",
+    "web/dist/",
+    "web/index.html"
+  ],
   "scripts": {
     "build": "pnpm run build:web && tsc -p tsconfig.build.json",
     "build:web": "pnpm run build:web:css && pnpm run build:web:js",
@@ -12,10 +16,12 @@
     "check": "tsgo --noEmit -p tsconfig.json"
   },
   "pi": {
-    "extensions": ["./src/index.ts"]
+    "extensions": [
+      "./src/index.ts"
+    ]
   },
   "dependencies": {
-    "@cwygoda/agent-diff-review-core": "workspace:*",
+    "@cwygoda/agent-diff-review-core": "1.0.0",
     "glimpseui": "^0.6.0",
     "monaco-editor": "^0.52.2"
   },
