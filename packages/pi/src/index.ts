@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
-import { getReviewWindowData, loadReviewFileContents } from "./core/git.js";
-import { composeReviewPrompt } from "./core/prompt.js";
+import { getReviewWindowData, loadReviewFileContents } from "@cwygoda/agent-diff-review-core/git";
+import { composeReviewPrompt } from "@cwygoda/agent-diff-review-core/prompt";
 import { createReviewFeedbackAdapter } from "./review-adapter.js";
 
 export default function (pi: ExtensionAPI) {

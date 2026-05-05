@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { buildReviewHtml } from "../src/review-html.js";
-import type { ReviewWindowData } from "../src/core/types.js";
+import { buildReviewHtml } from "../packages/pi/src/review-html.ts";
+import type { ReviewWindowData } from "../packages/core/src/types.ts";
 
 function extractReviewDataJson(html: string): string {
   const match = html.match(

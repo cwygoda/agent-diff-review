@@ -1,6 +1,6 @@
 import type { ExtensionAPI, ExtensionCommandContext } from "@mariozechner/pi-coding-agent";
 import { open } from "glimpseui";
-import type { ReviewScope } from "./core/types.js";
+import type { ReviewScope } from "@cwygoda/agent-diff-review-core/types";
 import type {
   ReviewCancelPayload,
   ReviewFile,
@@ -9,8 +9,8 @@ import type {
   ReviewRequestFilePayload,
   ReviewSubmitPayload,
   ReviewWindowMessage,
-} from "./core/types.js";
-import { parseMockSubmit } from "./core/mock-submit.js";
+} from "@cwygoda/agent-diff-review-core/types";
+import { parseMockSubmit } from "@cwygoda/agent-diff-review-core/mock-submit";
 import { buildReviewHtml } from "./review-html.js";
 
 export interface ReviewFeedbackAdapter {

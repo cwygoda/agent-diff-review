@@ -64,7 +64,7 @@ const testDir = dirname(fileURLToPath(import.meta.url));
 
 async function runPiTmuxScenario(options: ScenarioOptions = {}): Promise<string> {
   const projectRoot = resolve(testDir, "..");
-  const extensionEntry = resolve(projectRoot, "src", "index.ts");
+  const extensionEntry = resolve(projectRoot, "packages", "pi", "src", "index.ts");
   const repoRoot = createFixtureRepo();
   const sessionName = `agent-diff-review-vitest-${process.pid}-${Date.now()}`;
 

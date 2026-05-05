@@ -1,51 +1,17 @@
 {
-  "name": "@cwygoda/agent-diff-review",
-  "version": "0.2.0",
+  "name": "agent-diff-review-monorepo",
+  "private": true,
+  "version": "0.1.0",
   "type": "module",
-  "bin": {
-    "agent-diff-review": "dist/ui.js",
-    "agent-diff-review-claude": "dist/claude-tool.js"
-  },
-  "files": [
-    "dist/",
-    "scripts/",
-    ".claude/",
-    "web/dist/",
-    "types/"
-  ],
-  "engines": {
-    "node": ">=22.6.0"
-  },
   "scripts": {
-    "build:node": "tsc -p tsconfig.build.json",
-    "build:web": "npm run build:web:css && npm run build:web:js",
-    "cli": "node --experimental-strip-types ./src/cli.ts",
-    "claude:review": "node --experimental-strip-types ./src/ui.ts",
-    "claude:tool": "node --experimental-strip-types ./src/claude-tool.ts",
-    "build:web:css": "tailwindcss -i ./web/styles.css -o ./web/dist/styles.css --minify",
-    "build:web:js": "vite build",
-    "check": "tsgo --noEmit",
+    "build": "pnpm -r --filter './packages/*' run build",
+    "check": "pnpm -r --filter './packages/*' run check",
+    "test": "vitest",
     "lint": "eslint . && markdownlint-cli2",
     "lint:fix": "eslint . --fix && markdownlint-cli2 --fix && prettier --write .",
-    "test": "vitest",
-    "release": "semantic-release",
+    "release": "multi-semantic-release --sequential-init --first-parent",
     "postinstall": "node scripts/postinstall.js",
-    "prepare": "npm run build:node && npm run build:web && husky"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
-  "pi": {
-    "extensions": [
-      "./src/index.ts"
-    ]
-  },
-  "dependencies": {
-    "glimpseui": "^0.6.0",
-    "monaco-editor": "^0.52.2"
-  },
-  "peerDependencies": {
-    "@mariozechner/pi-coding-agent": "*"
+    "prepare": "pnpm build && husky"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
@@ -67,6 +33,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "markdownlint-cli2": "^0.22.1",
+    "multi-semantic-release": "^3.0.2",
     "prettier": "^3.8.3",
     "semantic-release": "^24.2.9",
     "tailwindcss": "^4.1.14",

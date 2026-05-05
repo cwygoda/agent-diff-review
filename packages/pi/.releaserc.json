@@ -1,0 +1,18 @@
+{
+  "branches": ["main"],
+  "tagFormat": "pi-v${version}",
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    ["@semantic-release/exec", { "prepareCmd": "pnpm --filter @cwygoda/agent-diff-review-pi run build:web" }],
+    ["@semantic-release/npm", { "npmPublish": true }],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["package.json", "../../pnpm-lock.yaml"],
+        "message": "chore(release): pi-v${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    "@semantic-release/github"
+  ]
+}

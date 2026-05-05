@@ -23,7 +23,7 @@ function createFixtureRepo(): string {
 describe("claude tool", () => {
   test("returns structured json", () => {
     const repoRoot = createFixtureRepo();
-    const entry = new URL("../src/claude-tool.ts", import.meta.url);
+    const entry = new URL("../packages/claude/src/claude-tool.ts", import.meta.url);
 
     try {
       const output = execFileSync("node", ["--experimental-strip-types", entry.pathname], {
@@ -46,7 +46,7 @@ describe("claude tool", () => {
 
   test("rejects non-object input", () => {
     const repoRoot = createFixtureRepo();
-    const entry = new URL("../src/claude-tool.ts", import.meta.url);
+    const entry = new URL("../packages/claude/src/claude-tool.ts", import.meta.url);
 
     try {
       expect(() =>

@@ -34,10 +34,15 @@ jobs:
           scope: "@cwygoda"
 
       - name: Install
-        run: pnpm install --frozen-lockfile
+        env:
+          HUSKY: 0
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Lint
         run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
 
       - name: Test
         run: pnpm test

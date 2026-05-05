@@ -6,6 +6,6 @@ config:
 globs:
   - "**/*.md"
 ignores:
-  - "node_modules/**"
+  - "**/node_modules/**"
   - ".git/**"
   - "CHANGELOG.md"
