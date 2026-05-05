@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, test } from "vitest";
-import { getReviewWindowData, loadReviewFileContents } from "../src/core/git.js";
+import { getReviewWindowData, loadReviewFileContents } from "../packages/core/src/git.ts";
 
 const execFileAsync = promisify(execFile);
 

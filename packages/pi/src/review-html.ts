@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { ReviewWindowData } from "./core/types.js";
+import type { ReviewWindowData } from "@cwygoda/agent-diff-review-core/types";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const webDir = join(__dirname, "..", "web");

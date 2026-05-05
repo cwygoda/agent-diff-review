@@ -55,7 +55,7 @@ describe.skipIf(noTmux)("cli tmux e2e", () => {
   test("outputs prompt", async () => {
     const repoRoot = createFixtureRepo();
     const sessionName = `agent-diff-review-cli-${process.pid}-${Date.now()}`;
-    const cliPath = resolve(process.cwd(), "src", "cli.ts");
+    const cliPath = resolve(process.cwd(), "packages", "claude", "src", "cli.ts");
 
     try {
       execFileSync("tmux", ["new-session", "-d", "-s", sessionName, "-c", repoRoot], {
@@ -90,7 +90,7 @@ describe.skipIf(noTmux)("cli tmux e2e", () => {
   test("outputs json and writes file", async () => {
     const repoRoot = createFixtureRepo();
     const sessionName = `agent-diff-review-cli-${process.pid}-${Date.now()}-json`;
-    const cliPath = resolve(process.cwd(), "src", "cli.ts");
+    const cliPath = resolve(process.cwd(), "packages", "claude", "src", "cli.ts");
     const outPath = join(repoRoot, "review.json");
 
     try {

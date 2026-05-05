@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildReviewContextPrompt } from "../src/core/review-context.js";
+import { buildReviewContextPrompt } from "../packages/core/src/review-context.ts";
 
 describe("buildReviewContextPrompt", () => {
   test("uses CONTENT block when original and modified are identical", () => {

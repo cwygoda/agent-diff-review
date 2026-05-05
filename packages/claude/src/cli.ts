@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import { writeFile } from "node:fs/promises";
-import { getReviewWindowData, loadReviewFileContents } from "./core/git.ts";
-import { CliArgumentError, parseFlagArgs, requireStringFlag } from "./core/cli-args.ts";
-import { buildReviewContextPrompt, fileInScope } from "./core/review-context.ts";
-import { createCommandRunner } from "./core/runner.ts";
-import type { ReviewScope } from "./core/types.ts";
+import { getReviewWindowData, loadReviewFileContents } from "@cwygoda/agent-diff-review-core/git";
+import { CliArgumentError, parseFlagArgs, requireStringFlag } from "@cwygoda/agent-diff-review-core/cli-args";
+import { buildReviewContextPrompt, fileInScope } from "@cwygoda/agent-diff-review-core/review-context";
+import { createCommandRunner } from "@cwygoda/agent-diff-review-core/runner";
+import type { ReviewScope } from "@cwygoda/agent-diff-review-core/types";
 
 type OutputMode = "prompt" | "json";
 

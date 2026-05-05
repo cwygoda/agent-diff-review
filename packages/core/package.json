@@ -1,0 +1,22 @@
+{
+  "name": "@cwygoda/agent-diff-review-core",
+  "version": "0.1.0",
+  "type": "module",
+  "files": ["dist/"],
+  "exports": {
+    "./types": "./dist/types.js",
+    "./git": "./dist/git.js",
+    "./prompt": "./dist/prompt.js",
+    "./review-context": "./dist/review-context.js",
+    "./runner": "./dist/runner.js",
+    "./cli-args": "./dist/cli-args.js",
+    "./mock-submit": "./dist/mock-submit.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "check": "tsgo --noEmit -p tsconfig.json"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

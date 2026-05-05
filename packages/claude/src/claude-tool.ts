@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { stdin as input } from "node:process";
-import { getReviewWindowData, loadReviewFileContents } from "./core/git.ts";
-import { buildReviewContextPrompt, fileInScope } from "./core/review-context.ts";
-import { createCommandRunner } from "./core/runner.ts";
-import type { ReviewScope } from "./core/types.ts";
+import { getReviewWindowData, loadReviewFileContents } from "@cwygoda/agent-diff-review-core/git";
+import { buildReviewContextPrompt, fileInScope } from "@cwygoda/agent-diff-review-core/review-context";
+import { createCommandRunner } from "@cwygoda/agent-diff-review-core/runner";
+import type { ReviewScope } from "@cwygoda/agent-diff-review-core/types";
 
 interface ToolInput {
   cwd?: string;

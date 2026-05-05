@@ -55,7 +55,7 @@ describe.skipIf(noTmux)("claude ui adapter tmux e2e", () => {
   test("mock submit prints composed prompt", async () => {
     const repoRoot = createFixtureRepo();
     const sessionName = `agent-diff-review-claude-${process.pid}-${Date.now()}`;
-    const entry = resolve(process.cwd(), "src", "ui.ts");
+    const entry = resolve(process.cwd(), "packages", "claude", "src", "ui.ts");
 
     try {
       execFileSync("tmux", ["new-session", "-d", "-s", sessionName, "-c", repoRoot], {
@@ -89,7 +89,7 @@ describe.skipIf(noTmux)("claude ui adapter tmux e2e", () => {
   test("mock cancel prints cancellation message", async () => {
     const repoRoot = createFixtureRepo();
     const sessionName = `agent-diff-review-claude-${process.pid}-${Date.now()}-cancel`;
-    const entry = resolve(process.cwd(), "src", "ui.ts");
+    const entry = resolve(process.cwd(), "packages", "claude", "src", "ui.ts");
 
     try {
       execFileSync("tmux", ["new-session", "-d", "-s", sessionName, "-c", repoRoot], {

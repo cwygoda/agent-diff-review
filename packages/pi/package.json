@@ -1,0 +1,27 @@
+{
+  "name": "@cwygoda/agent-diff-review-pi",
+  "version": "0.1.0",
+  "type": "module",
+  "files": ["dist/", "web/dist/", "web/index.html"],
+  "scripts": {
+    "build": "pnpm run build:web && tsc -p tsconfig.build.json",
+    "build:web": "pnpm run build:web:css && pnpm run build:web:js",
+    "build:web:css": "tailwindcss -i ./web/styles.css -o ./web/dist/styles.css --minify",
+    "build:web:js": "vite build",
+    "check": "tsgo --noEmit -p tsconfig.json"
+  },
+  "pi": {
+    "extensions": ["./src/index.ts"]
+  },
+  "dependencies": {
+    "@cwygoda/agent-diff-review-core": "workspace:*",
+    "glimpseui": "^0.6.0",
+    "monaco-editor": "^0.52.2"
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}
