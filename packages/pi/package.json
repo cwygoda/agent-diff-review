@@ -1,6 +1,7 @@
 {
   "name": "@cwygoda/agent-diff-review-pi",
   "version": "0.1.0",
+  "description": "Pi extension for agent diff review.",
   "type": "module",
   "files": ["dist/", "web/dist/", "web/index.html"],
   "scripts": {
