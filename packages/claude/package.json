@@ -19,6 +19,7 @@
     "@cwygoda/agent-diff-review-core": "1.0.0"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
   }
 }
