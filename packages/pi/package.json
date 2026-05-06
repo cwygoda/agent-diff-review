@@ -1,6 +1,6 @@
 {
   "name": "@cwygoda/agent-diff-review-pi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Pi extension for agent diff review.",
   "type": "module",
   "files": [
@@ -21,7 +21,7 @@
     ]
   },
   "dependencies": {
-    "@cwygoda/agent-diff-review-core": "workspace:*", 
+    "@cwygoda/agent-diff-review-core": "1.0.0",
     "glimpseui": "^0.6.0",
     "monaco-editor": "^0.52.2"
   },
