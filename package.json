@@ -9,7 +9,7 @@
     "test": "vitest",
     "lint": "eslint . && markdownlint-cli2",
     "lint:fix": "eslint . --fix && markdownlint-cli2 --fix && prettier --write .",
-    "release": "multi-semantic-release --sequential-init --first-parent",
+    "release": "multi-semantic-release --sequential-init --first-parent --deps.bump=ignore", 
     "postinstall": "node scripts/postinstall.js",
     "prepare": "pnpm build && husky"
   },
