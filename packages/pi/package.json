@@ -2,6 +2,7 @@
   "name": "@cwygoda/agent-diff-review-pi",
   "version": "1.0.1",
   "description": "Pi extension for agent diff review.",
+  "keywords": ["pi", "diff-review", "extension"],
   "type": "module",
   "files": [
     "dist/",

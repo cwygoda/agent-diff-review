@@ -2,6 +2,7 @@
   "name": "@cwygoda/agent-diff-review-core",
   "version": "1.0.0",
   "description": "Shared core logic for agent diff review workflows.",
+  "keywords": ["diff-review", "ai", "git"],
   "type": "module",
   "files": [
     "dist/"

@@ -26,6 +26,9 @@ jobs:
           git config --global init.defaultBranch main
           git config --global advice.defaultBranchName false
 
+      - name: Verify internal workspace dependencies
+        run: pnpm run verify:internal-deps
+
       - name: Install
         env:
           HUSKY: 0
