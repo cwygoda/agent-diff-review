@@ -17,7 +17,7 @@
     "check": "tsgo --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@cwygoda/agent-diff-review-core": "1.0.0"
+    "@cwygoda/agent-diff-review-core": "workspace:*"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
