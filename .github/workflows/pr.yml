@@ -21,6 +21,11 @@ jobs:
           node-version: 24
           cache: pnpm
 
+      - name: Configure git defaults
+        run: |
+          git config --global init.defaultBranch main
+          git config --global advice.defaultBranchName false
+
       - name: Install
         env:
           HUSKY: 0

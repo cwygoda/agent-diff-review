@@ -33,6 +33,11 @@ jobs:
           registry-url: https://registry.npmjs.org
           scope: "@cwygoda"
 
+      - name: Configure git defaults
+        run: |
+          git config --global init.defaultBranch main
+          git config --global advice.defaultBranchName false
+
       - name: Install
         env:
           HUSKY: 0
